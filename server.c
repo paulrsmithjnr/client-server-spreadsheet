@@ -53,19 +53,17 @@ int main() {
         /* listening socket  */
     addr_size=sizeof(recv_addr);
     sock_recv=accept(sock_listen, (struct sockaddr *) &recv_addr, &addr_size);
-    // int flag=1;
-    // while (flag){
-    //     bytes_received=recv(sock_recv,buf,BUF_SIZE,0);
-    //     buf[bytes_received]=0;
-    //     printf("Received: %s\n",buf);
-    //     if (strcmp(buf,"shutdown") == 0){
-    //         flag=0;
-    //         break;
-    //     }
-    // }
-    bytes_received=recv(sock_recv,buf,BUF_SIZE,0);
-    buf[bytes_received]=0;
-    printf("Received: %s\n",buf);
+    int flag=1;
+    while (flag){
+        bytes_received=recv(sock_recv,buf,BUF_SIZE,0);
+        buf[bytes_received]=0;
+        printf("Received: %s\n",buf);
+        if (strcmp(buf,"shutdown") == 0){
+            flag=0;
+            break;
+        }
+    }
+    
     close(sock_recv);
     close(sock_listen);
     return 0;

@@ -40,28 +40,24 @@ int main() {
         printf("connect() failed\n");
         exit(0);
     }
-    // int flag=1;
-    // while (flag){
-    //     /* send some data */
-    //     printf("Enter the cell address you would like to edit (Please enter quit to leave): ");
-    //     scanf("%s",text);
-    //     if (strcmp(text,"quit") == 0){
-    //         // strcpy(buf,text);
-    //         printf("Bye!!!\n");
-    //         strcpy(buf,"shutdown");
-    //         send_len=strlen(text);
-    //         bytes_sent=send(sock_send,buf,send_len,0);
-    //         flag=0;
-    //         break;
-    //     }
-    //     createSpreadsheet();
+    int flag=1;
+    while (flag){
+        /* send some data */
+        printf("Enter the cell address you would like to edit (Please enter quit to leave): ");
+        scanf("%s",text);
+        if (strcmp(text,"quit") == 0){
+            // strcpy(buf,text);
+            printf("Bye!!!\n");
+            strcpy(buf,"shutdown");
+            send_len=strlen("shutdown");
+            bytes_sent=send(sock_send,buf,send_len,0);
+            flag=0;
+            break;
+        }
+        createSpreadsheet();
         
-    // }
-    printf("Enter the cell address you would like to edit (Please enter quit to leave): ");
-    scanf("%s",text);
-    strcpy(buf,text);
-    send_len=strlen(text);
-    bytes_sent=send(sock_send,buf,send_len,0);
+    }
+
     createSpreadsheet();
     close(sock_send);
     return 0;
