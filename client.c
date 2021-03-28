@@ -8,18 +8,23 @@
 #include <unistd.h>
 
 
+
 #define BUF_SIZE	1024
 #define	SERVER_IP	"127.0.0.1"
 #define SERVER_PORT	60000
 
 void createSpreadsheet();
 
+
+
+void clientMenu();
+
 int main() {
     int	sock_send;
     struct sockaddr_in	addr_send;
     int	i;
-    char text[80],buf[BUF_SIZE];
-    int	send_len,bytes_sent;
+
+
 
         /* create socket for sending data */
     sock_send=socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -57,12 +62,10 @@ int main() {
     //     createSpreadsheet();
         
     // }
-    printf("Enter the cell address you would like to edit (Please enter quit to leave): ");
-    scanf("%s",text);
-    strcpy(buf,text);
-    send_len=strlen(text);
-    bytes_sent=send(sock_send,buf,send_len,0);
-    createSpreadsheet();
+
+
+    clientMenu(sock_send);
+
     close(sock_send);
     return 0;
 }
@@ -78,4 +81,53 @@ void createSpreadsheet() {
         printf("%d %s\n",i+1, VERTICAL__LINES);
     }
     printf("%s\n", HORIZONTAL_LINE);
+}
+
+
+void clientMenu(int sock_send) {
+
+
+    char text[80],buff[BUF_SIZE];
+    char readBuff[BUF_SIZE];
+    int	send_len,bytes_sent;
+
+
+    for(;;) {
+
+        bzero(buff, sizeof (buff));
+        printf("Enter the cell address you would like to edit (Please enter quit to leave): ");
+        scanf("%s",text);
+
+
+        while (!strcmp(text, "quit"))
+            ;
+        strcpy(buff,text);
+        send_len=strlen(text);
+
+        createSpreadsheet();
+
+        if(send_len == 2){
+
+
+            bytes_sent=send(sock_send,buff,send_len,0);
+
+           printf("met \n");
+
+          /*  write(sock_send, buff, sizeof (buff));*/
+
+
+        }else{
+            printf("Invalid coordinate");
+            close(sock_send);
+        }
+
+        bzero(buff, sizeof(buff));
+        read(sock_send, readBuff, sizeof(buff));
+        printf("From Server : %s", readBuff);
+        if ((strncmp(buff, "quit", 4)) == 0) {
+            printf("Client Exit...\n");
+            break;
+        }
+
+    }
 }

@@ -9,6 +9,8 @@
 #define BUF_SIZE	1024
 #define LISTEN_PORT	60000
 
+void serverMenu();
+
 int main() {
     int	sock_listen,sock_recv;
     struct sockaddr_in	my_addr,recv_addr;
@@ -17,6 +19,14 @@ int main() {
     struct sockaddr	remote_addr;
     int	recv_msg_size;
     char buf[BUF_SIZE];
+
+
+    //const for grid num reference
+    int const NUM_RANGE=9;
+
+
+    //grid global
+    char * grid[NUM_RANGE][NUM_RANGE];
 
 
             /* create socket for listening */
@@ -63,10 +73,46 @@ int main() {
     //         break;
     //     }
     // }
-    bytes_received=recv(sock_recv,buf,BUF_SIZE,0);
-    buf[bytes_received]=0;
-    printf("Received: %s\n",buf);
+
+
+    serverMenu(sock_listen, sock_recv);
+
     close(sock_recv);
     close(sock_listen);
     return 0;
+}
+
+void serverMenu(int sock_listen, int sock_recv )
+{
+
+    char buff[BUF_SIZE];
+    int bytes_received;
+    char test_text[80];
+    // infinite loop for chat
+    for (;;) {
+
+        // read the message from client and copy it in buffer
+        bytes_received=recv(sock_recv,buff,BUF_SIZE,0);
+        buff[bytes_received]=0;
+
+       /* read(sock_recv, buff, sizeof(buff));*/
+        // print buffer which contains the client contents
+        printf("From client: %s\t To client : ", buff);
+        bzero(buff, BUF_SIZE);
+
+        // copy server message in the buffer
+        while (!strcmp(buff, "quit"))
+            ;
+
+        strcpy(test_text,"Noiice");
+        strcpy(buff,test_text);
+        // and send that buffer to client
+        write(sock_listen, buff, sizeof(buff));
+
+        // if msg contains "Exit" then server exit and chat ended.
+        if (strncmp("quit", buff, 4) == 0) {
+            printf("Server Exit...\n");
+            break;
+        }
+    }
 }
