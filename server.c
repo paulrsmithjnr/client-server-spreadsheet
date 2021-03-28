@@ -17,6 +17,10 @@ int main() {
     struct sockaddr	remote_addr;
     int	recv_msg_size;
     char buf[BUF_SIZE];
+    int const NUM_RANGE=9;
+
+    //global declaration structure grid
+    char * grid[NUM_RANGE][NUM_RANGE];
 
 
             /* create socket for listening */
@@ -68,3 +72,33 @@ int main() {
     close(sock_listen);
     return 0;
 }
+
+//place value on position
+void placeOnGrid(int x, int y, char* c){
+    grid[x-1][y-1]=c;
+    return;
+}
+
+//checks if spot on grid is already filled
+bool checkGridSpot(int x, int y){
+    printf("%s \n",grid[x-1][y-1] );
+    if(*grid[x-1][y-1] == ' '){
+        return true;
+    }else{
+        return false;
+    }
+
+}
+
+//checks if coordinates is on the board
+bool validatePosition(int x, int y){
+    if(x == 0 || y == 0){
+        return false;
+    }
+    if(x <= NUM_RANGE && y <= NUM_RANGE ){
+        return true;
+    }else{return false;}
+
+}
+
+//TODO create function to convert grid to string to send to client
