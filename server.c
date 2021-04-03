@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #define BUF_SIZE	1024
-#define LISTEN_PORT	2122
+#define LISTEN_PORT	2121
 #define NUM_RANGE 9
 
 //function declarations
@@ -71,16 +71,16 @@ int main() {
         /* listening socket  */
     addr_size=sizeof(recv_addr);
     sock_recv=accept(sock_listen, (struct sockaddr *) &recv_addr, &addr_size);
-    int flag=1;
+    int x, y;
     getNewSpreadsheet();
-    while (flag){
-
+    while (1){
+        x = 0;
+        y = 0;
         //receive cell details (address:value)
         bytes_received=recv(sock_recv,buf,BUF_SIZE,0);
         buf[bytes_received]=0;
         if (strcmp(buf,"shutdown") == 0){
             printf("Received: %s ",buf);
-            flag=0;
             break;
         }
         cellAddr = strtok(buf, ":");
@@ -88,19 +88,21 @@ int main() {
         printf("Received: %s -> %s\n", cellVal, cellAddr);
 
         if (strlen(cellAddr) == 2) {
-            int y = colLetterToNum(cellAddr[0]);
-            int x = cellAddr[1] - '0';
-            placeOnGrid(x, y, cellVal);
-
-            //broadcast cell details (address:value) to all clients
-            strcpy(details, cellAddr);
-            strcat(details, ":");
-            strcat(details, cellVal);
-            strcpy(buf, details);
-            send_len=strlen(details);
-            bytes_sent=send(sock_recv,buf,send_len,0);
+            y = colLetterToNum(cellAddr[0]);
+            x = cellAddr[1] - '0';
+            if(validatePosition(x,y)) {
+                placeOnGrid(x, y, cellVal);
+            }
         }
         
+        //broadcast cell details (address:value) to all clients - sends '00' as the coordinates if the cell address received is invalid
+        char coordinates[] = {x + '0', y + '0', '\0'};
+        strcpy(details, coordinates);
+        strcat(details, ":");
+        strcat(details, cellVal);
+        strcpy(buf, details);
+        send_len=strlen(details);
+        bytes_sent=send(sock_recv,buf,send_len,0);       
     }
     printf("\n");
     close(sock_recv);
@@ -136,14 +138,13 @@ int checkGridSpot(int x, int y){
 
 }
 
-//checks if coordinates is on the board
+//checks if coordinates is on the grid
 int validatePosition(int x, int y){
-    if(x == 0 || y == 0){
+    if(((x < 1) || (x > NUM_RANGE)) || ((y < 1) || (y > NUM_RANGE))) {
         return 0;
-    }
-    if(x <= NUM_RANGE && y <= NUM_RANGE ){
+    } else {
         return 1;
-    }else{return 0;}
+    }    
 }
 
 int colLetterToNum(char letter) {

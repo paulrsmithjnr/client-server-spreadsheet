@@ -10,7 +10,7 @@
 
 #define BUF_SIZE	1024
 #define	SERVER_IP	"127.0.0.1"
-#define SERVER_PORT	2122
+#define SERVER_PORT	2121
 #define NUM_RANGE 9
 
 //function declarations
@@ -82,8 +82,12 @@ int main() {
         addr = strtok(buf, ":");
         val = strtok(NULL, ":");
 
-        int y = colLetterToNum(addr[0]);
-        int x = addr[1] - '0';
+        int x = addr[0] - '0';
+        int y = addr[1] - '0';
+        if((x == 0) || (y == 0)) {
+            printf("\n ** ERROR: Invalid request (ignored) **\n");
+            continue;
+        }
         placeOnGrid(x, y, val);
         drawSpreadsheet();
     }
@@ -135,50 +139,6 @@ void drawSpreadsheet() {
         printf("|\n");
     }
     printf("%s\n", HORIZONTAL_LINE);
-}
-
-//TODO: Remove this function and have server broadcast the actual coordinates on the grid to place the value
-int colLetterToNum(char letter) {
-    switch(letter) {
-        case 'A':
-        case 'a':
-            return 1;
-        
-        case 'B':
-        case 'b':
-            return 2;
-        
-        case 'C':
-        case 'c':
-            return 3;
-
-        case 'D':
-        case 'd':
-            return 4;
-
-        case 'E':
-        case 'e':
-            return 5;
-
-        case 'F':
-        case 'f':
-            return 6;
-
-        case 'G':
-        case 'g':
-            return 7;
-
-        case 'H':
-        case 'h':
-            return 8;
-
-        case 'I':
-        case 'i':
-            return 9;
-        
-        default:
-            return 0;
-    }
 }
 
 void placeOnGrid(int x, int y, char* c){
