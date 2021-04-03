@@ -21,7 +21,8 @@ int isNumber(char *string);
 int power(int base, int exp);
 int stringToNumber(char *string);
 double average(char *start, char *end);
-char *floatToString(double number);
+double sum(char *start, char *end);
+void gridtoFile();
 
 //global declaration structure grid
 char * grid[NUM_RANGE][NUM_RANGE];
@@ -36,34 +37,29 @@ int main() {
     int send_len,bytes_sent;
     char buf[BUF_SIZE];
     char *cellAddr, *cellVal, details[90];
-    // int const NUM_RANGE=9;
-
-    //global declaration structure grid
-    // char * grid[NUM_RANGE][NUM_RANGE];
 
 
-            /* create socket for listening */
+    /* create socket for listening */
     sock_listen=socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sock_listen < 0){
         printf("socket() failed\n");
         exit(0);
     }
-        /* make local address structure */
+        
+    /* make local address structure */
     memset(&my_addr, 0, sizeof (my_addr));	/* zero out structure */
     my_addr.sin_family = AF_INET;	/* address family */
     my_addr.sin_addr.s_addr = htonl(INADDR_ANY);  /* current machine IP */
     my_addr.sin_port = htons((unsigned short)LISTEN_PORT);
 
-        /* bind socket to the local address */
+    /* bind socket to the local address */
     i=bind(sock_listen, (struct sockaddr *) &my_addr, sizeof (my_addr));
     if (i < 0){
         printf("bind() failed\n");
         exit(0);
     }
     
-    
-        /* listen ... */
-    
+    /* listen ... */
     i=listen(sock_listen, 5);
     if (i < 0){
         printf("listen() failed\n");
@@ -71,10 +67,9 @@ int main() {
     }
     
     
- 
-        /* get new socket to receive data on */
-        /* It extracts the first connection request from the  */
-        /* listening socket  */
+    /* get new socket to receive data on */
+    /* It extracts the first connection request from the  */
+    /* listening socket  */
     addr_size=sizeof(recv_addr);
     sock_recv=accept(sock_listen, (struct sockaddr *) &recv_addr, &addr_size);
     int x, y;
@@ -100,7 +95,7 @@ int main() {
             function = strtok(function, "(");
             // printf("\nFunction: %s\n", function); //TODO: Remove
             if((strcmp(function, "average") == 0) || (strcmp(function, "AVERAGE") == 0)) {
-                // strcpy(cellVal, "average");
+
                 char *avgParam1 = strtok(NULL, "(");
                 avgParam1 = strtok(avgParam1, ","); //first parameter stored here
 
@@ -114,12 +109,23 @@ int main() {
                 } else {
                     double resultAvg = average(avgParam1, avgParam2);
                     sprintf(cellVal, "%.2lf", resultAvg);
-                    // printf("\nTest Average: %.2lf\n", resultAvg); //TODO: Remove
                 }
 
-                // strcpy(cellVal, "average"); //TODO: Remove
             } else if((strcmp(function, "sum") == 0) || (strcmp(function, "SUM") == 0)) { //checking for the sum function
-                strcpy(cellVal, "sum");
+                
+                char *sumParam1 = strtok(NULL, "(");
+                sumParam1 = strtok(sumParam1, ","); //first parameter stored here
+
+                char *sumParam2 = strtok(NULL, ",");
+                sumParam2[strlen(sumParam2)-1] = '\0'; //second parameter stored here
+
+                if((strlen(sumParam1) != 2) || (strlen(sumParam2) != 2)) {
+                    strcpy(cellAddr, "00"); //will evoke a pre-handled error - message on the client side
+                } else {
+                    double resultSum = sum(sumParam1, sumParam2);
+                    sprintf(cellVal, "%.2lf", resultSum);
+                }
+
             }
         }
 
@@ -244,33 +250,6 @@ int isNumber(char *string) {
     return flag;
 }
 
-//TODO: Remove below
-// int power(int base, int exp) {
-//     int result = 1;
-//     while(exp != 0) {
-//         result *= base;
-//         exp--;
-//     }
-//     return result;
-// }
-
-// int stringToNumber(char *string) {
-//     int number = 0;
-//     int signFlag = 0;
-//     if(string[0] == '-') {
-//         signFlag = 1;
-//     }
-
-//     for(int i = 0; i < strlen(string); i++) {
-//         number += (string[i] - '0') * power(10, (strlen(string) - (i+1)));
-//     }
-
-//     if(signFlag) {
-//         number *= -1;
-//     }
-//     return number;
-// }
-
 double average(char *start, char *end) {
     double avg = 0, count = 0;
     int xCoords[2] = {start[1] - '0', end[1] - '0'};
@@ -295,18 +274,19 @@ double average(char *start, char *end) {
     }
     /////////////////////////////////////////////////////////////////////////////////////////////
 
-    // printf("\n(x1,y1) (x2, y2): (%d, %d) (%d, %d)\n", x1, y1, x2, y2); //TODO: Remove
     for(int x = x1 - 1; x < ((x1 - 1) + ((x2 - x1)+1)); x++) {
         for(int y = y1 - 1; y <  ((y1 - 1) + ((y2 - y1)+1)); y++) {
-            // printf("\nGrid (%d, %d): %s\n", x, y, grid[x][y]); //TODO: Remove
+
             if(isNumber(grid[x][y]) == 1) {
-                // printf("\nString to Number: %d\n", atoi(grid[x][y])); //TODO: Remove
+
                 avg += atoi(grid[x][y]);
                 count++;
+
             } else if(isNumber(grid[x][y]) == 2) {
-                // printf("\nString to Number: %.2lf\n", atof(grid[x][y])); //TODO: Remove
+
                 avg += atof(grid[x][y]);
                 count++;
+
             } else if(strcmp(grid[x][y], " ") == 0) {
                 count++;
             }
@@ -316,6 +296,47 @@ double average(char *start, char *end) {
         return 0;
     }
     return avg/count;
+}
+
+double sum(char *start, char *end) {
+    double sum = 0;
+    int xCoords[2] = {start[1] - '0', end[1] - '0'};
+    int yCoords[2] = {colLetterToNum(start[0]), colLetterToNum(end[0])};
+    int x1, y1, x2, y2;
+
+    ///////This block makes it so that the order of the parameters given does not matter///////
+    if (xCoords[0] < xCoords[1]) {
+        x1 = xCoords[0];
+        x2 = xCoords[1];
+    } else {
+        x1 = xCoords[1];
+        x2 = xCoords[0];
+    }
+
+    if (yCoords[0] < yCoords[1]) {
+        y1 = yCoords[0];
+        y2 = yCoords[1];
+    } else {
+        y1 = yCoords[1];
+        y2 = yCoords[0];
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////
+
+    for(int x = x1 - 1; x < ((x1 - 1) + ((x2 - x1)+1)); x++) {
+        for(int y = y1 - 1; y <  ((y1 - 1) + ((y2 - y1)+1)); y++) {
+
+            if(isNumber(grid[x][y]) == 1) {
+
+                sum += atoi(grid[x][y]);
+
+            } else if(isNumber(grid[x][y]) == 2) {
+
+                sum += atof(grid[x][y]);
+
+            }
+        }
+    }
+    return sum;
 }
 
 //write the contents of the grid to a file
@@ -332,5 +353,4 @@ void gridtoFile(){
         }
      }
      fclose(fptr);
-     return 0;
 }
