@@ -14,7 +14,7 @@
 //function declarations
 void getNewSpreadsheet();
 void placeOnGrid(int x, int y, char* c);
-int checkGridSpot(int x, int y);
+int isEmptyCell(int x, int y);
 int validatePosition(int x, int y);
 int colLetterToNum(char letter);
 int isNumber(char *string);
@@ -169,15 +169,13 @@ void placeOnGrid(int x, int y, char* c){
     return;
 }
 
-//checks if spot on grid is already filled
-int checkGridSpot(int x, int y){
-    printf("%s \n",grid[x-1][y-1] );
-    if(*grid[x-1][y-1] == ' '){
-        return 1;
-    }else{
-        return 0;
+//checks if selected cell is empty
+int isEmptyCell(int x, int y){
+    int flag = 0;
+    if(strcmp(grid[x-1][y-1], " ") == 0){
+        flag = 1;
     }
-
+    return flag;
 }
 
 //checks if coordinates is on the grid

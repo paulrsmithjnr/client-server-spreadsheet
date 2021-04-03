@@ -6,6 +6,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <ctype.h>
 
 
 #define BUF_SIZE	1024
@@ -63,6 +64,12 @@ int main() {
             bytes_sent=send(sock_send,buf,send_len,0);
             flag=0;
             break;
+        } else if(strlen(cellAddr) != 2) {
+            printf("\n ** ERROR: Invalid cell address **\n");
+            continue;
+        } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
+            printf("\n ** ERROR: Invalid cell address **\n");
+            continue;
         }
 
         printf("Enter value to input into the selected cell: ");
