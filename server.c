@@ -317,3 +317,20 @@ double average(char *start, char *end) {
     }
     return avg/count;
 }
+
+//write the contents of the grid to a file
+void gridtoFile(){
+    FILE *fptr;// file pointer 
+    fptr=fopen("gridfile.txt","w");
+    if(fptr==NULL){
+        printf("ERROR :File was not created");
+        exit(EXIT_FAILURE);
+    }
+     for(int i = 0; i < NUM_RANGE; i++) {
+        for(int j = 0; j < NUM_RANGE; j++) {
+            fprintf(fptr,"%d%d:%s\n", i, j, grid[i][j]);
+        }
+     }
+     fclose(fptr);
+     return 0;
+}
