@@ -6,6 +6,7 @@
 #include <string.h>	/* memset warnings */
 #include <unistd.h>
 #include <ctype.h>
+#include <float.h>
 
 #define BUF_SIZE	1024
 #define LISTEN_PORT	2121
@@ -22,6 +23,7 @@ int power(int base, int exp);
 int stringToNumber(char *string);
 double average(char *start, char *end);
 double sum(char *start, char *end);
+double range(char *start, char *end);
 void gridtoFile();
 
 //global declaration structure grid
@@ -124,6 +126,21 @@ int main() {
                 } else {
                     double resultSum = sum(sumParam1, sumParam2);
                     sprintf(cellVal, "%.2lf", resultSum);
+                }
+
+            } else if((strcmp(function, "range") == 0) || (strcmp(function, "RANGE") == 0)) { //checking for the range function
+                
+                char *rngParam1 = strtok(NULL, "(");
+                rngParam1 = strtok(rngParam1, ","); //first parameter stored here
+
+                char *rngParam2 = strtok(NULL, ",");
+                rngParam2[strlen(rngParam2)-1] = '\0'; //second parameter stored here
+
+                if((strlen(rngParam1) != 2) || (strlen(rngParam2) != 2)) {
+                    strcpy(cellAddr, "00"); //will evoke a pre-handled error - message on the client side
+                } else {
+                    double resultRng = range(rngParam1, rngParam2);
+                    sprintf(cellVal, "%.2lf", resultRng);
                 }
 
             }
@@ -335,6 +352,56 @@ double sum(char *start, char *end) {
         }
     }
     return sum;
+}
+
+double range(char *start, char *end) {
+    double range, largest, smallest;
+    int xCoords[2] = {start[1] - '0', end[1] - '0'};
+    int yCoords[2] = {colLetterToNum(start[0]), colLetterToNum(end[0])};
+    int x1, y1, x2, y2;
+
+    ///////This block makes it so that the order of the parameters given does not matter///////
+    if (xCoords[0] < xCoords[1]) {
+        x1 = xCoords[0];
+        x2 = xCoords[1];
+    } else {
+        x1 = xCoords[1];
+        x2 = xCoords[0];
+    }
+
+    if (yCoords[0] < yCoords[1]) {
+        y1 = yCoords[0];
+        y2 = yCoords[1];
+    } else {
+        y1 = yCoords[1];
+        y2 = yCoords[0];
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////
+
+    largest = -DBL_MAX; //assigns smallest possible double value
+    smallest = DBL_MAX; //assigns largest possible double value
+    for(int x = x1 - 1; x < ((x1 - 1) + ((x2 - x1)+1)); x++) {
+        for(int y = y1 - 1; y <  ((y1 - 1) + ((y2 - y1)+1)); y++) {
+
+            if(isNumber(grid[x][y]) >= 1) {
+                if(atof(grid[x][y]) < smallest) {
+                    smallest = atof(grid[x][y]);
+                }
+                if(atof(grid[x][y]) > largest) {
+                    largest = atof(grid[x][y]);
+                }
+            } else if(strcmp(grid[x][y], " ") == 0) {
+                if(0 < smallest) {
+                    smallest = 0;
+                }
+                if(0 > largest) {
+                    largest = 0;
+                }
+            }
+        }
+    }
+    range = largest - smallest;
+    return range;
 }
 
 //write the contents of the grid to a file
