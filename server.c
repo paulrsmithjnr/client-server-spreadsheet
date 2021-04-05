@@ -10,7 +10,7 @@
 #include <pthread.h>
 
 #define BUFFER_SIZE	1024
-#define LISTEN_PORT	2123
+#define LISTEN_PORT	2127
 #define NUM_RANGE   9
 #define MAX_CLIENTS 100
 
@@ -23,11 +23,12 @@ typedef struct client_t{
 } client_t;
 
 //function declarations
-void *handle_client(void *arg);
+void *handleClient(void *arg);
 void addToClientArray(client_t *client);
 void removeFromClientArray(int uid);
 void messageClient(char *message, int uid);
 void broadcastMessage(char *message);
+void updateClientSpreadsheet(int uid);
 void getNewSpreadsheet();
 void placeOnGrid(int x, int y, char* c);
 int isEmptyCell(int x, int y);
@@ -117,7 +118,7 @@ int main() {
 
         //TODO: Add client to array here
         addToClientArray(client);
-        pthread_create(&tid, NULL, &handle_client, (void *)client);
+        pthread_create(&tid, NULL, &handleClient, (void *)client);
     }
     printf("\n[+] Server shutdown successfully\n");
     close(sock_listen);
@@ -218,7 +219,7 @@ int main() {
     return 0;
 }
 
-void *handle_client(void *arg) {
+void *handleClient(void *arg) {
     client_t *client = (client_t *)arg;
     char buffer[BUFFER_SIZE], *cellAddr, *cellVal, details[90];
     int bytes_received, x, y;
@@ -230,6 +231,8 @@ void *handle_client(void *arg) {
     clientCount++;
     printf("\n[+] %s (client %d) connected successfully\n", client->name, client->uid);
     printf("[+] Total number of clients: %d\n\n", clientCount);
+
+    updateClientSpreadsheet(client->uid);
     
     while (1){
         x = 0;
@@ -366,16 +369,9 @@ void messageClient(char *message, int uid) {
     int bytes_sent, send_len = strlen(message);
 
     strcpy(buffer, message);
-    for(int i = 0; i < MAX_CLIENTS; i++) {
-        if(clients[i]) {
-            if(clients[i]->uid == uid) {
-                bytes_sent = send(clients[i]->sockfd, buffer, send_len, 0);
-                if(bytes_sent < 0) {
-                    printf("\n[-] Error in sending message to Client %d: %s\n", clients[i]->uid, clients[i]->name);
-                }
-                break;
-            }
-        }
+    bytes_sent = send(clients[uid]->sockfd, buffer, send_len, 0);
+    if(bytes_sent < 0) {
+        printf("\n[-] Error in sending message to Client %d: %s\n", uid, clients[uid]->name);
     }
 
     pthread_mutex_unlock(&clients_mutex);
@@ -399,6 +395,29 @@ void broadcastMessage(char *message) {
     }
 
     pthread_mutex_unlock(&clients_mutex);
+}
+
+void updateClientSpreadsheet(int uid) {
+    // sprintf(cellVal, "%.2lf", resultAvg);
+    char coordinates[2], details[90];
+    
+    // broadcastMessage(details);
+    for(int x = 0; x < NUM_RANGE; x++) {
+        for(int y = 0; y < NUM_RANGE; y ++) {
+            memset(&details, 0, sizeof(details));
+
+            coordinates[0] = (x+1) + '0';
+            coordinates[1] = (y+1) + '0';
+
+            strcpy(details, coordinates);
+            strcat(details, ":");
+            strcat(details, grid[x][y]);
+
+            messageClient(details, uid);
+            sleep(0.5);
+        }
+    }
+    messageClient("Done", uid);
 }
 
 void getNewSpreadsheet() {

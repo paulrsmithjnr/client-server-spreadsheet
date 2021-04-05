@@ -12,12 +12,13 @@
 
 #define BUFFER_SIZE	1024
 #define	SERVER_IP	"127.0.0.1"
-#define SERVER_PORT	2123
+#define SERVER_PORT	2127
 #define NUM_RANGE 9
 
 //function declarations
 void receiveFromServer();
 void sendToServer();
+void receiveUpdates();
 void printPrompt();
 void drawSpreadsheet();
 void getNewSpreadsheet();
@@ -69,6 +70,7 @@ int main() {
     int bytes_sent=send(sock_send, name , send_len, 0);
 
     getNewSpreadsheet();
+    receiveUpdates();
     drawSpreadsheet();
 
     pthread_t sendThread;
@@ -174,7 +176,6 @@ void sendToServer() {
         printPrompt();
         scanf("%s",cellAddr);
         strcpy(promptInput, cellAddr);
-        promptNo = 1;
         if (strcmp(cellAddr,"quit") == 0){
             printf("Bye!!!\n");
             strcpy(buffer, "shutdown");
@@ -189,11 +190,10 @@ void sendToServer() {
             printf("\n ** ERROR: Invalid cell address **\n");
             continue;
         }
+        promptNo = 1;
 
         printf("Enter value to input into the selected cell: ");
         scanf("%s", cellVal);
-        promptNo = 0;
-        promptInput[0] = '\0';
 
         //send cell details (address:value) to server
         strcpy(details, cellAddr);
@@ -202,8 +202,41 @@ void sendToServer() {
         strcpy(buffer, details);
         send_len=strlen(details);
         bytes_sent=send(sock_send,buffer,send_len,0);
+
+        promptNo = 0;
+        promptInput[0] = '\0';
     }
     return;
+}
+
+void receiveUpdates() {
+    char buffer[BUFFER_SIZE], *addr, *val;
+    int bytes_received;
+
+    //receive broadcasted cell details from server
+    while(1) {
+        memset(&buffer, 0, sizeof(buffer));
+        bytes_received=recv(sock_send, buffer, BUFFER_SIZE,0);
+
+        buffer[bytes_received]=0;
+        if(strcmp(buffer, "Done") == 0) {
+            // printf("%s\n", buffer);
+            break;
+        }
+        // printf("%s\n", buffer);
+        // continue;
+
+        addr = strtok(buffer, ":");
+        val = strtok(NULL, ":");
+
+        int x = addr[0] - '0';
+        int y = addr[1] - '0';
+        if((x == 0) || (y == 0)) {
+            printf("\n ** ERROR: Invalid request (ignored) **\n");
+            continue;
+        }
+        placeOnGrid(x, y, val);
+    }
 }
 
 void printPrompt() {
