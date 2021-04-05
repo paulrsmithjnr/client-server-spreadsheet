@@ -7,12 +7,27 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <float.h>
+#include <pthread.h>
 
-#define BUF_SIZE	1024
+#define BUFFER_SIZE	1024
 #define LISTEN_PORT	2121
-#define NUM_RANGE 9
+#define NUM_RANGE   9
+#define MAX_CLIENTS 100
+
+//structure definition for a client
+typedef struct client_t{
+    struct sockaddr_in address;
+	int sockfd;
+    char name[20];
+    int uid;
+} client_t;
 
 //function declarations
+void *handle_client(void *arg);
+void addToClientArray(client_t *client);
+void removeFromClientArray(int uid);
+void messageClient(char *message, int uid);
+void broadcastMessage(char *message);
 void getNewSpreadsheet();
 void placeOnGrid(int x, int y, char* c);
 int isEmptyCell(int x, int y);
@@ -26,8 +41,20 @@ double sum(char *start, char *end);
 double range(char *start, char *end);
 void gridtoFile();
 
-//global declaration structure grid
+//global declaration of the spreadsheet's grid structure
 char * grid[NUM_RANGE][NUM_RANGE];
+
+//global declaration of the clients array
+client_t *clients[MAX_CLIENTS];
+
+//keeps track of the number of clients connected
+static int clientCount = 0;
+
+//generates unique ID for each client
+static int genUID = 0;
+
+//client mutex to facilitate multithreading
+pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int main() {
     int	sock_listen,sock_recv;
@@ -37,9 +64,9 @@ int main() {
     struct sockaddr	remote_addr;
     int	recv_msg_size;
     int send_len,bytes_sent;
-    char buf[BUF_SIZE];
+    char buffer[BUFFER_SIZE];
     char *cellAddr, *cellVal, details[90];
-
+    pthread_t tid;
 
     /* create socket for listening */
     sock_listen=socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -68,26 +95,146 @@ int main() {
         exit(0);
     }
     
-    
-    /* get new socket to receive data on */
-    /* It extracts the first connection request from the  */
-    /* listening socket  */
-    addr_size=sizeof(recv_addr);
-    sock_recv=accept(sock_listen, (struct sockaddr *) &recv_addr, &addr_size);
-    int x, y;
     getNewSpreadsheet();
+    while(1) {
+        /* get new socket to receive data on */
+        /* It extracts the first connection request from the  */
+        /* listening socket  */
+        addr_size=sizeof(recv_addr);
+        sock_recv=accept(sock_listen, (struct sockaddr *) &recv_addr, &addr_size);
+
+        if((clientCount + 1) > MAX_CLIENTS) {
+            printf("[-] Max number of clients reached.");
+            close(sock_recv);
+            continue;
+        }
+
+        client_t *client = (client_t *)malloc(sizeof(client_t));
+        client->address = recv_addr;
+        client->sockfd = sock_recv;
+        strcpy(client->name, "sample_name");
+        client->uid = genUID;
+        genUID++;
+
+        //TODO: Add client to array here
+        addToClientArray(client);
+        pthread_create(&tid, NULL, &handle_client, (void *)client);
+    }
+    
+    // int x, y;
+    // getNewSpreadsheet();
+    // while (1){
+    //     x = 0;
+    //     y = 0;
+
+    //     //receive cell details (address:value)
+    //     bytes_received=recv(sock_recv,buffer,BUFFER_SIZE,0);
+    //     buffer[bytes_received]=0;
+    //     if (strcmp(buffer,"shutdown") == 0){
+    //         printf("Received: %s ",buffer);
+    //         break;
+    //     }
+        
+    //     cellAddr = strtok(buffer, ":");
+    //     cellVal = strtok(NULL, ":");
+    //     printf("Received: %s -> %s\n", cellVal, cellAddr);
+
+    //     if((cellVal[0] == '=')) { //checking for the average function
+
+    //         char *function = strtok(cellVal, "=");
+    //         function = strtok(function, "(");
+    //         // printf("\nFunction: %s\n", function); //TODO: Remove
+    //         if((strcmp(function, "average") == 0) || (strcmp(function, "AVERAGE") == 0)) {
+
+    //             char *avgParam1 = strtok(NULL, "(");
+    //             avgParam1 = strtok(avgParam1, ","); //first parameter stored here
+
+    //             char *avgParam2 = strtok(NULL, ",");
+    //             avgParam2[strlen(avgParam2)-1] = '\0'; //second parameter stored here
+
+    //             // printf("\nParams: %s, %s\n", avgParam1, avgParam2); //TODO: Remove
+
+    //             if((strlen(avgParam1) != 2) || (strlen(avgParam2) != 2)) {
+    //                 strcpy(cellAddr, "00"); //will evoke a pre-handled error - message on the client side
+    //             } else {
+    //                 double resultAvg = average(avgParam1, avgParam2);
+    //                 sprintf(cellVal, "%.2lf", resultAvg);
+    //             }
+
+    //         } else if((strcmp(function, "sum") == 0) || (strcmp(function, "SUM") == 0)) { //checking for the sum function
+                
+    //             char *sumParam1 = strtok(NULL, "(");
+    //             sumParam1 = strtok(sumParam1, ","); //first parameter stored here
+
+    //             char *sumParam2 = strtok(NULL, ",");
+    //             sumParam2[strlen(sumParam2)-1] = '\0'; //second parameter stored here
+
+    //             if((strlen(sumParam1) != 2) || (strlen(sumParam2) != 2)) {
+    //                 strcpy(cellAddr, "00"); //will evoke a pre-handled error - message on the client side
+    //             } else {
+    //                 double resultSum = sum(sumParam1, sumParam2);
+    //                 sprintf(cellVal, "%.2lf", resultSum);
+    //             }
+
+    //         } else if((strcmp(function, "range") == 0) || (strcmp(function, "RANGE") == 0)) { //checking for the range function
+                
+    //             char *rngParam1 = strtok(NULL, "(");
+    //             rngParam1 = strtok(rngParam1, ","); //first parameter stored here
+
+    //             char *rngParam2 = strtok(NULL, ",");
+    //             rngParam2[strlen(rngParam2)-1] = '\0'; //second parameter stored here
+
+    //             if((strlen(rngParam1) != 2) || (strlen(rngParam2) != 2)) {
+    //                 strcpy(cellAddr, "00"); //will evoke a pre-handled error - message on the client side
+    //             } else {
+    //                 double resultRng = range(rngParam1, rngParam2);
+    //                 sprintf(cellVal, "%.2lf", resultRng);
+    //             }
+
+    //         }
+    //     }
+
+    //     if (strlen(cellAddr) == 2) {
+    //         y = colLetterToNum(cellAddr[0]);
+    //         x = cellAddr[1] - '0';
+    //         if(validatePosition(x,y)) {
+    //             placeOnGrid(x, y, cellVal);
+    //         }
+    //     }
+        
+    //     //broadcast cell details (address:value) to all clients - sends '00' as the coordinates if the cell address received is invalid
+    //     char coordinates[] = {x + '0', y + '0', '\0'};
+    //     strcpy(details, coordinates);
+    //     strcat(details, ":");
+    //     strcat(details, cellVal);
+    //     strcpy(buffer, details);
+    //     send_len=strlen(details);
+    //     bytes_sent=send(sock_recv,buffer,send_len,0);       
+    // }
+    // printf("\n");
+    // close(sock_recv);
+    // close(sock_listen);
+    return 0;
+}
+
+void *handle_client(void *arg) {
+    client_t *client = (client_t *)arg;
+    char buffer[BUFFER_SIZE];
+
+    int x, y;
     while (1){
         x = 0;
         y = 0;
+        
         //receive cell details (address:value)
-        bytes_received=recv(sock_recv,buf,BUF_SIZE,0);
-        buf[bytes_received]=0;
-        if (strcmp(buf,"shutdown") == 0){
-            printf("Received: %s ",buf);
+        bytes_received=recv(client->sockfd,buffer,BUFFER_SIZE,0);
+        buffer[bytes_received]=0;
+        if (strcmp(buffer,"shutdown") == 0){
+            printf("Received: %s ",buffer);
             break;
         }
         
-        cellAddr = strtok(buf, ":");
+        cellAddr = strtok(buffer, ":");
         cellVal = strtok(NULL, ":");
         printf("Received: %s -> %s\n", cellVal, cellAddr);
 
@@ -159,14 +306,80 @@ int main() {
         strcpy(details, coordinates);
         strcat(details, ":");
         strcat(details, cellVal);
-        strcpy(buf, details);
+        strcpy(buffer, details);
         send_len=strlen(details);
-        bytes_sent=send(sock_recv,buf,send_len,0);       
+        bytes_sent=send(sock_recv,buffer,send_len,0);       
     }
     printf("\n");
     close(sock_recv);
     close(sock_listen);
-    return 0;
+
+}
+
+void addToClientArray(client_t *client) {
+    pthread_mutex_lock(&clients_mutex);
+
+    for(int i = 0; i < MAX_CLIENTS; i++) {
+        if(!clients[i]) {
+            clients[i] = client;
+            break;
+        }
+    }
+
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+void removeFromClientArray(int uid) {
+    pthread_mutex_lock(&clients_mutex);
+
+    for(int i = 0; i < MAX_CLIENTS; i++) {
+        if(client[i]->uid == uid) {
+            clients[i] = NULL;
+            break;
+        }
+    }
+
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+void messageClient(char *message, int uid) {
+    pthread_mutex_lock(&clients_mutex);
+
+    char buffer[BUFFER_SIZE];
+    int bytes_sent, send_len = strlen(message);
+
+    strcpy(buffer, message);
+    for(int i = 0; i < MAX_CLIENTS; i++) {
+        if(client[i]->uid == uid) {
+            bytes_sent = send(client[i]->sockfd, buffer, send_len, 0);
+            if(bytes_sent < 0) {
+                printf("\n[-] Error in sending message to Client %d: %s\n", client[i]->uid, client[i]->name);
+            }
+            break;
+        }
+    }
+
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+void broadcastMessage(char *message) {
+    pthread_mutex_lock(&clients_mutex);
+
+    char buffer[BUFFER_SIZE];
+    int bytes_sent, send_len = strlen(message);
+
+    strcpy(buffer, message);
+    for(int i = 0; i < MAX_CLIENTS; i++) {
+        if(client[i]) {
+            bytes_sent = send(client[i]->sockfd, buffer, send_len, 0);
+            if(bytes_sent < 0) {
+                printf("\n[-] Error in sending message to Client %d: %s\n", client[i]->uid, client[i]->name);
+            }
+            break;
+        }
+    }
+
+    pthread_mutex_unlock(&clients_mutex);
 }
 
 void getNewSpreadsheet() {
