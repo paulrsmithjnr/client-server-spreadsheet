@@ -267,3 +267,30 @@ void placeOnGrid(int x, int y, char* c){
     grid[x-1][y-1]=string;
     return;
 }
+
+void mainmenu (){
+    int choice;
+
+    do {
+        printf(" ********WECLOME USER********\n\n");
+        printf("Please enter the number that corresponds with your choice:\n\n");
+        printf("\t(1) Update the spreadsheet\n");
+        printf("\t(2) Save the spreadsheet\n");
+        printf("\t(3) Exit\n\n");
+        printf("Choice: ");
+        scanf("%d", &choice);
+        switch(choice){
+        case 1: 
+                printf("This is option 1");
+                break;
+        case 2:
+                printf("This is option 2");
+                break;
+        case 3:
+                printf("Goodbye!");
+                exit(0);
+                break;
+        }
+    } while (choice != 3);
+
+}
