@@ -12,7 +12,7 @@
 
 #define BUFFER_SIZE	1024
 #define	SERVER_IP	"127.0.0.1"
-#define SERVER_PORT	2121
+#define SERVER_PORT	2123
 #define NUM_RANGE 9
 
 //function declarations
@@ -29,6 +29,10 @@ char * grid[NUM_RANGE][NUM_RANGE];
 
 //global socket declaration
 int sock_send;
+
+//global variable to keep track of prompts
+int promptNo = 0;
+char promptInput[4];
 
 //global declaration of flag
 static volatile int endFlag = 0;
@@ -56,6 +60,14 @@ int main() {
         printf("connect() failed\n");
         exit(0);
     }
+
+    char name[20];
+    printf("\nEnter your display name: ");
+    scanf("%s", name);
+
+    int send_len=strlen(name);
+    int bytes_sent=send(sock_send, name , send_len, 0);
+
     getNewSpreadsheet();
     drawSpreadsheet();
 
@@ -161,6 +173,8 @@ void sendToServer() {
         /* send some data */
         printPrompt();
         scanf("%s",cellAddr);
+        strcpy(promptInput, cellAddr);
+        promptNo = 1;
         if (strcmp(cellAddr,"quit") == 0){
             printf("Bye!!!\n");
             strcpy(buffer, "shutdown");
@@ -178,6 +192,8 @@ void sendToServer() {
 
         printf("Enter value to input into the selected cell: ");
         scanf("%s", cellVal);
+        promptNo = 0;
+        promptInput[0] = '\0';
 
         //send cell details (address:value) to server
         strcpy(details, cellAddr);
@@ -191,7 +207,12 @@ void sendToServer() {
 }
 
 void printPrompt() {
-    printf("\nEnter the cell address you would like to edit (Please enter quit to leave): ");
+    if(promptNo) {
+        printf("\nEnter the cell address you would like to edit (Please enter quit to leave): %s\n", promptInput);
+        printf("Enter value to input into the selected cell: ");
+    } else {
+        printf("\nEnter the cell address you would like to edit (Please enter quit to leave): ");
+    }
     fflush(stdout);
 }
 

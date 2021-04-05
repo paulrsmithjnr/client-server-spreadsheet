@@ -10,7 +10,7 @@
 #include <pthread.h>
 
 #define BUFFER_SIZE	1024
-#define LISTEN_PORT	2121
+#define LISTEN_PORT	2123
 #define NUM_RANGE   9
 #define MAX_CLIENTS 100
 
@@ -75,7 +75,7 @@ int main() {
     }
         
     /* make local address structure */
-    memset(&my_addr, 0, sizeof (my_addr));	/* zero out structure */
+    memset(&my_addr, 0, sizeof(my_addr));	/* zero out structure */
     my_addr.sin_family = AF_INET;	/* address family */
     my_addr.sin_addr.s_addr = htonl(INADDR_ANY);  /* current machine IP */
     my_addr.sin_port = htons((unsigned short)LISTEN_PORT);
@@ -83,14 +83,14 @@ int main() {
     /* bind socket to the local address */
     i=bind(sock_listen, (struct sockaddr *) &my_addr, sizeof (my_addr));
     if (i < 0){
-        printf("bind() failed\n");
+        printf("[-] ERROR: Socket binding failed\n");
         exit(0);
     }
     
     /* listen ... */
     i=listen(sock_listen, 5);
     if (i < 0){
-        printf("listen() failed\n");
+        printf("[-] ERROR: Socket listening failed\n");
         exit(0);
     }
     
@@ -111,7 +111,7 @@ int main() {
         client_t *client = (client_t *)malloc(sizeof(client_t));
         client->address = recv_addr;
         client->sockfd = sock_recv;
-        strcpy(client->name, "sample_name");
+        // strcpy(client->name, "sample_name");
         client->uid = genUID;
         genUID++;
 
@@ -119,6 +119,7 @@ int main() {
         addToClientArray(client);
         pthread_create(&tid, NULL, &handle_client, (void *)client);
     }
+    printf("\n[+] Server shutdown successfully\n");
     close(sock_listen);
     
     // int x, y;
@@ -219,28 +220,34 @@ int main() {
 
 void *handle_client(void *arg) {
     client_t *client = (client_t *)arg;
-    char buffer[BUFFER_SIZE], *cellAddr, *cellVal, details[90];;
+    char buffer[BUFFER_SIZE], *cellAddr, *cellVal, details[90];
+    int bytes_received, x, y;
+
+    bytes_received=recv(client->sockfd, buffer, BUFFER_SIZE,0);
+    buffer[bytes_received] = 0;
+    strcpy(client->name, buffer);
 
     clientCount++;
-    printf("\n%s (Client %d) connected\n", client->name, client->uid);
-    printf("Total number of clients: %d\n\n", clientCount);
+    printf("\n[+] %s (client %d) connected successfully\n", client->name, client->uid);
+    printf("[+] Total number of clients: %d\n\n", clientCount);
     
-    int bytes_received, x, y;
     while (1){
         x = 0;
         y = 0;
         
         //receive cell details (address:value)
-        bytes_received=recv(client->sockfd,buffer,BUFFER_SIZE,0);
+        bytes_received=recv(client->sockfd, buffer, BUFFER_SIZE, 0);
         buffer[bytes_received]=0;
-        if (strcmp(buffer,"shutdown") == 0){
-            printf("Received: %s ",buffer);
+        if (strcmp(buffer, "shutdown") == 0) {
+            if(client->uid == 0) {
+                printf("\n[+] %s (client %d) ended the session\n\n", client->name, client->uid);
+            }
             break;
         }
         
         cellAddr = strtok(buffer, ":");
         cellVal = strtok(NULL, ":");
-        printf("Received: %s -> %s\n", cellVal, cellAddr);
+        printf("[+] %s (client %d): %s -> %s\n", client->name, client->uid, cellVal, cellAddr);
 
         if((cellVal[0] == '=')) { //checking for the average function
 
@@ -315,11 +322,14 @@ void *handle_client(void *arg) {
         // send_len=strlen(details);
         // bytes_sent=send(sock_recv,buffer,send_len,0);       
     }
-    printf("\n");
+    printf("\n[-] %s (client %d) disconnected\n", client->name, client->uid);
     close(client->sockfd);
+    clientCount--;
+    if(client->uid != 0) {
+        printf("[-] Total number of clients: %d\n\n", clientCount);
+    }
     removeFromClientArray(client->uid);
     free(client);
-    clientCount--;
     pthread_detach(pthread_self());
 }
 
@@ -357,12 +367,14 @@ void messageClient(char *message, int uid) {
 
     strcpy(buffer, message);
     for(int i = 0; i < MAX_CLIENTS; i++) {
-        if(clients[i]->uid == uid) {
-            bytes_sent = send(clients[i]->sockfd, buffer, send_len, 0);
-            if(bytes_sent < 0) {
-                printf("\n[-] Error in sending message to Client %d: %s\n", clients[i]->uid, clients[i]->name);
+        if(clients[i]) {
+            if(clients[i]->uid == uid) {
+                bytes_sent = send(clients[i]->sockfd, buffer, send_len, 0);
+                if(bytes_sent < 0) {
+                    printf("\n[-] Error in sending message to Client %d: %s\n", clients[i]->uid, clients[i]->name);
+                }
+                break;
             }
-            break;
         }
     }
 
