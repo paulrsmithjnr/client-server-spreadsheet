@@ -221,6 +221,10 @@ void *handle_client(void *arg) {
     client_t *client = (client_t *)arg;
     char buffer[BUFFER_SIZE], *cellAddr, *cellVal, details[90];;
 
+    clientCount++;
+    printf("\n%s (Client %d) connected\n", client->name, client->uid);
+    printf("Total number of clients: %d\n\n", clientCount);
+    
     int bytes_received, x, y;
     while (1){
         x = 0;
@@ -377,8 +381,8 @@ void broadcastMessage(char *message) {
             bytes_sent = send(clients[i]->sockfd, buffer, send_len, 0);
             if(bytes_sent < 0) {
                 printf("\n[-] Error in sending message to Client %d: %s\n", clients[i]->uid, clients[i]->name);
+                break;
             }
-            break;
         }
     }
 
