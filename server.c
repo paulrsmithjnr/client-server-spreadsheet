@@ -369,9 +369,15 @@ void messageClient(char *message, int uid) {
     int bytes_sent, send_len = strlen(message);
 
     strcpy(buffer, message);
-    bytes_sent = send(clients[uid]->sockfd, buffer, send_len, 0);
-    if(bytes_sent < 0) {
-        printf("\n[-] Error in sending message to Client %d: %s\n", uid, clients[uid]->name);
+    for(int i = 0; i < MAX_CLIENTS; i++) {
+        if(clients[i]->uid == uid) {
+            bytes_sent = send(clients[i]->sockfd, buffer, send_len, 0);
+            if(bytes_sent < 0) {
+                printf("\n[-] Error in sending message to Client %d: %s\n", clients[i]->uid, clients[i]->name);
+                break;
+            }
+            break;
+        }
     }
 
     pthread_mutex_unlock(&clients_mutex);
