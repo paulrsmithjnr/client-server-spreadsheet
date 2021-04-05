@@ -59,13 +59,12 @@ pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
 int main() {
     int	sock_listen,sock_recv;
     struct sockaddr_in	my_addr,recv_addr;
-    int i,addr_size,bytes_received;
+    int i,addr_size;
     int	incoming_len;
     struct sockaddr	remote_addr;
     int	recv_msg_size;
     int send_len,bytes_sent;
     char buffer[BUFFER_SIZE];
-    char *cellAddr, *cellVal, details[90];
     pthread_t tid;
 
     /* create socket for listening */
@@ -120,6 +119,7 @@ int main() {
         addToClientArray(client);
         pthread_create(&tid, NULL, &handle_client, (void *)client);
     }
+    close(sock_listen);
     
     // int x, y;
     // getNewSpreadsheet();
@@ -219,9 +219,9 @@ int main() {
 
 void *handle_client(void *arg) {
     client_t *client = (client_t *)arg;
-    char buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE], *cellAddr, *cellVal, details[90];;
 
-    int x, y;
+    int bytes_received, x, y;
     while (1){
         x = 0;
         y = 0;
@@ -306,14 +306,17 @@ void *handle_client(void *arg) {
         strcpy(details, coordinates);
         strcat(details, ":");
         strcat(details, cellVal);
-        strcpy(buffer, details);
-        send_len=strlen(details);
-        bytes_sent=send(sock_recv,buffer,send_len,0);       
+        broadcastMessage(details);
+        // strcpy(buffer, details);
+        // send_len=strlen(details);
+        // bytes_sent=send(sock_recv,buffer,send_len,0);       
     }
     printf("\n");
-    close(sock_recv);
-    close(sock_listen);
-
+    close(client->sockfd);
+    removeFromClientArray(client->uid);
+    free(client);
+    clientCount--;
+    pthread_detach(pthread_self());
 }
 
 void addToClientArray(client_t *client) {
@@ -333,7 +336,7 @@ void removeFromClientArray(int uid) {
     pthread_mutex_lock(&clients_mutex);
 
     for(int i = 0; i < MAX_CLIENTS; i++) {
-        if(client[i]->uid == uid) {
+        if(clients[i]->uid == uid) {
             clients[i] = NULL;
             break;
         }
@@ -350,10 +353,10 @@ void messageClient(char *message, int uid) {
 
     strcpy(buffer, message);
     for(int i = 0; i < MAX_CLIENTS; i++) {
-        if(client[i]->uid == uid) {
-            bytes_sent = send(client[i]->sockfd, buffer, send_len, 0);
+        if(clients[i]->uid == uid) {
+            bytes_sent = send(clients[i]->sockfd, buffer, send_len, 0);
             if(bytes_sent < 0) {
-                printf("\n[-] Error in sending message to Client %d: %s\n", client[i]->uid, client[i]->name);
+                printf("\n[-] Error in sending message to Client %d: %s\n", clients[i]->uid, clients[i]->name);
             }
             break;
         }
@@ -370,10 +373,10 @@ void broadcastMessage(char *message) {
 
     strcpy(buffer, message);
     for(int i = 0; i < MAX_CLIENTS; i++) {
-        if(client[i]) {
-            bytes_sent = send(client[i]->sockfd, buffer, send_len, 0);
+        if(clients[i]) {
+            bytes_sent = send(clients[i]->sockfd, buffer, send_len, 0);
             if(bytes_sent < 0) {
-                printf("\n[-] Error in sending message to Client %d: %s\n", client[i]->uid, client[i]->name);
+                printf("\n[-] Error in sending message to Client %d: %s\n", clients[i]->uid, clients[i]->name);
             }
             break;
         }
