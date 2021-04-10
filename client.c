@@ -12,7 +12,7 @@
 
 #define BUFFER_SIZE	1024
 #define	SERVER_IP	"127.0.0.1"
-#define SERVER_PORT	2127
+#define SERVER_PORT	2122
 #define NUM_RANGE 9
 
 //function declarations
@@ -24,6 +24,7 @@ void drawSpreadsheet();
 void getNewSpreadsheet();
 int colLetterToNum(char letter);
 void placeOnGrid(int x, int y, char* c);
+void displayMenu();
 
 //global declaration structure grid
 char * grid[NUM_RANGE][NUM_RANGE];
@@ -38,6 +39,11 @@ char promptInput[4];
 //global declaration of flag
 static volatile int endFlag = 0;
 
+//Display name
+char name[20];
+int isFirstClient = 0;
+char nameOfSpreadsheet[50];
+
 int main() {
     struct sockaddr_in	addr_send;
     int	i;
@@ -45,9 +51,10 @@ int main() {
         /* create socket for sending data */
     sock_send=socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (sock_send < 0){
-        printf("socket() failed\n");
+        printf("[-] Failed to create socket\n");
         exit(0);
     }
+    printf("[+] Socket created\n");
 
         /* create socket address structure to connect to */
     memset(&addr_send, 0, sizeof (addr_send)); /* zero out structure */
@@ -58,12 +65,12 @@ int main() {
         /* connect to the server */
     i=connect(sock_send, (struct sockaddr *) &addr_send, sizeof (addr_send));
     if (i < 0){
-        printf("connect() failed\n");
+        printf("[-] Failed to connect to the server\n");
         exit(0);
     }
 
-    char name[20];
-    printf("\nEnter your display name: ");
+    printf("[+] Successfully connected to the server\n");
+    printf("Enter your display name: ");
     scanf("%s", name);
 
     int send_len=strlen(name);
@@ -72,6 +79,7 @@ int main() {
     getNewSpreadsheet();
     receiveUpdates();
     drawSpreadsheet();
+    // displayMenu();
 
     pthread_t sendThread;
     int sendVal = pthread_create(&sendThread, NULL, (void *) sendToServer, NULL);
@@ -88,54 +96,14 @@ int main() {
     }
 
     while (1){
-        // /* send some data */
-        // printf("\nEnter the cell address you would like to edit (Please enter quit to leave): ");
-        // scanf("%s",cellAddr);
-        // if (strcmp(cellAddr,"quit") == 0){
-        //     printf("Bye!!!\n");
-        //     strcpy(buf,"shutdown");
-        //     send_len=strlen("shutdown");
-        //     bytes_sent=send(sock_send,buf,send_len,0);
-        //     break;
-        // } else if(strlen(cellAddr) != 2) {
-        //     printf("\n ** ERROR: Invalid cell address **\n");
-        //     continue;
-        // } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
-        //     printf("\n ** ERROR: Invalid cell address **\n");
-        //     continue;
-        // }
-
-        // printf("Enter value to input into the selected cell: ");
-        // scanf("%s", cellVal);
-
-        // //send cell details (address:value) to server
-        // strcpy(details, cellAddr);
-        // strcat(details, ":");
-        // strcat(details, cellVal);
-        // strcpy(buf, details);
-        // send_len=strlen(details);
-        // bytes_sent=send(sock_send,buf,send_len,0);
-
-        // //receive broadcasted cell details from server
-        // bytes_received=recv(sock_send,buf,BUF_SIZE,0);
-        // buf[bytes_received]=0;
-        // addr = strtok(buf, ":");
-        // val = strtok(NULL, ":");
-
-        // int x = addr[0] - '0';
-        // int y = addr[1] - '0';
-        // if((x == 0) || (y == 0)) {
-        //     printf("\n ** ERROR: Invalid request (ignored) **\n");
-        //     continue;
-        // }
-        // placeOnGrid(x, y, val);
-        // drawSpreadsheet();
         if(endFlag) {
             break;
         }
     }
-
+    printf("[-] Disconnected from the server\n");
     close(sock_send);
+    printf("[-] Socket closed\n");
+    printf("[-] Bye!\n");
     return 0;
 }
 
@@ -145,21 +113,30 @@ void receiveFromServer() {
 
     //receive broadcasted cell details from server
     while(1) {
-        bytes_received=recv(sock_send, buffer, BUFFER_SIZE,0);
+            bytes_received=recv(sock_send, buffer, BUFFER_SIZE,0);
 
-        buffer[bytes_received]=0;
-        addr = strtok(buffer, ":");
-        val = strtok(NULL, ":");
+            buffer[bytes_received]=0;
+            if(strcmp(buffer, "endsession") == 0) {
+                printf("\n\n[+] The session was ended\n");
+                strcpy(buffer, "shutdown");
+                int send_len = strlen("shutdown");
+                int bytes_sent = send(sock_send, buffer, send_len, 0);
+                endFlag = 1;
+                break;
+            }
+            addr = strtok(buffer, ":");
+            val = strtok(NULL, ":");
 
-        int x = addr[0] - '0';
-        int y = addr[1] - '0';
-        if((x == 0) || (y == 0)) {
-            printf("\n ** ERROR: Invalid request (ignored) **\n");
-            continue;
-        }
-        placeOnGrid(x, y, val);
-        drawSpreadsheet();
-        printPrompt();
+            int x = addr[0] - '0';
+            int y = addr[1] - '0';
+            if((x == 0) || (y == 0)) {
+                printf("\n ** ERROR: Invalid request (ignored) **\n");
+                continue;
+            }
+            placeOnGrid(x, y, val);
+            drawSpreadsheet();
+            printPrompt();
+            // displayMenu();
 
         if(endFlag) {
             break;
@@ -177,7 +154,6 @@ void sendToServer() {
         scanf("%s",cellAddr);
         strcpy(promptInput, cellAddr);
         if (strcmp(cellAddr,"quit") == 0){
-            printf("Bye!!!\n");
             strcpy(buffer, "shutdown");
             send_len = strlen("shutdown");
             bytes_sent = send(sock_send, buffer, send_len, 0);
@@ -206,12 +182,46 @@ void sendToServer() {
         promptNo = 0;
         promptInput[0] = '\0';
     }
-    return;
+
+    // /* send some data */
+    // printPrompt();
+    // scanf("%s",cellAddr);
+    // strcpy(promptInput, cellAddr);
+    // if (strcmp(cellAddr,"quit") == 0){
+    //     strcpy(buffer, "shutdown");
+    //     send_len = strlen("shutdown");
+    //     bytes_sent = send(sock_send, buffer, send_len, 0);
+    //     endFlag = 1;
+    //     return;
+    // } else if(strlen(cellAddr) != 2) {
+    //     printf("\n ** ERROR: Invalid cell address **\n");
+    //     return;
+    // } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
+    //     printf("\n ** ERROR: Invalid cell address **\n");
+    //     return;
+    // }
+    // promptNo = 1;
+
+    // printf("Enter value to input into the selected cell: ");
+    // scanf("%s", cellVal);
+
+    // //send cell details (address:value) to server
+    // strcpy(details, cellAddr);
+    // strcat(details, ":");
+    // strcat(details, cellVal);
+    // strcpy(buffer, details);
+    // send_len=strlen(details);
+    // bytes_sent=send(sock_send,buffer,send_len,0);
+
+    // promptNo = 0;
+    // promptInput[0] = '\0';
 }
 
 void receiveUpdates() {
     char buffer[BUFFER_SIZE], *addr, *val;
     int bytes_received;
+
+    strcpy(nameOfSpreadsheet, "sample_spreadsheet_name");
 
     //receive broadcasted cell details from server
     while(1) {
@@ -220,12 +230,10 @@ void receiveUpdates() {
 
         buffer[bytes_received]=0;
         if(strcmp(buffer, "Done") == 0) {
-            // printf("%s\n", buffer);
             break;
         }
-        // printf("%s\n", buffer);
-        // continue;
 
+        printf("Update received: %s\n", buffer);
         addr = strtok(buffer, ":");
         val = strtok(NULL, ":");
 
@@ -262,8 +270,12 @@ void drawSpreadsheet() {
     char * const COLUMN_HEADINGS = "      A        B        C        D        E        F        G        H        I";
     char * const HORIZONTAL_LINE = "  +--------+--------+--------+--------+--------+--------+--------+--------+--------+";
     int const cellWidthPaddingVal = 8;
-
-    printf("\n\n%s\n", COLUMN_HEADINGS);
+    
+    for(int i = 0; i < 20; i++) {
+        printf("\n");
+    }
+    printf("\nSPREADSHEET TITLE: %s\n\n", nameOfSpreadsheet);
+    printf("%s\n", COLUMN_HEADINGS);
     for(int i = 0; i < NUM_RANGE; i++) {
         printf("%s\n", HORIZONTAL_LINE);
         printf("%d ", i+1);
@@ -301,29 +313,33 @@ void placeOnGrid(int x, int y, char* c){
     return;
 }
 
-void mainmenu (){
-    int choice;
+void displayMenu() {
+    char choice[2];
 
-    do {
-        printf(" ********WECLOME USER********\n\n");
+    while(1) {
+        drawSpreadsheet();
+        printf("\n\n****************    Hi, %s!   ****************\n\n", name);
         printf("Please enter the number that corresponds with your choice:\n\n");
         printf("\t(1) Update the spreadsheet\n");
         printf("\t(2) Save the spreadsheet\n");
         printf("\t(3) Exit\n\n");
         printf("Choice: ");
-        scanf("%d", &choice);
-        switch(choice){
-        case 1: 
-                printf("This is option 1");
+        scanf("%s", choice);
+
+        switch(choice[0]){
+            case '1': 
+                // printf("This is option 1");
+                sendToServer();
                 break;
-        case 2:
+            case '2':
                 printf("This is option 2");
                 break;
-        case 3:
+            case '3':
                 printf("Goodbye!");
                 exit(0);
                 break;
+            default:
+                break;
         }
-    } while (choice != 3);
-
+    }
 }
