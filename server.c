@@ -153,6 +153,10 @@ void *handleClient(void *arg) {
     broadcastMessageToAllExcept(message, client->uid);
 
     updateClientSpreadsheet(client->uid);
+
+    // sleep(0.5);
+    // sprintf(message, "count:%d", clientCount);
+    // broadcastMessage(message);
     
     while (1){
         x = 0;
@@ -258,6 +262,8 @@ void *handleClient(void *arg) {
     if(client->uid != 0) {
         if(!endFlag) {
             printf("\n[-] Total number of clients: %d\n", clientCount);
+            // sprintf(message, "count:%d", clientCount);
+            // broadcastMessage(message);
         }
     } else {
         while(clientCount > 0);

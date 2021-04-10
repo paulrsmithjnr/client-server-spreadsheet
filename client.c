@@ -43,6 +43,7 @@ static volatile int endFlag = 0;
 char name[20];
 int isFirstClient = 0;
 char nameOfSpreadsheet[50];
+int clientCount = 0;
 
 int main() {
     struct sockaddr_in	addr_send;
@@ -132,7 +133,11 @@ void receiveFromServer() {
                 printf("\n%s", val);
                 printPrompt();
                 continue;
-            }
+            } /*else if(strcmp(addr, "count") == 0){
+                clientCount = atoi(val);
+                drawSpreadsheet();
+                printPrompt();
+            }*/
 
             int x = addr[0] - '0';
             int y = addr[1] - '0';
@@ -185,7 +190,7 @@ void sendToServer() {
 
                     atMenu = 1;
                     break;
-                } else if((cellAddr[0] < 'a' && cellAddr[0] < 'A') || (cellAddr[0] > 'i' && cellAddr[0] > 'I')) {
+                } else if(!( (cellAddr[0] >= 65 && cellAddr[0] <= 73) || (cellAddr[0] >= 97 && cellAddr[0] <= 105) )) {
                     drawSpreadsheet();
                     printf("\n[-] ERROR: Invalid cell address \n");
 
@@ -258,6 +263,7 @@ void receiveUpdates() {
 }
 
 void printPrompt() {
+    // printf("Total number of clients online: %d", clientCount);
     if(atMenu) {
         displayMenu();
     } else if(promptNo) {
