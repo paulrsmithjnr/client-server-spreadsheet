@@ -43,7 +43,7 @@ static volatile int endFlag = 0;
 char name[20];
 int isFirstClient = 0;
 char nameOfSpreadsheet[50];
-int clientCount = 0;
+static int clientCount = 0;
 
 int main() {
     struct sockaddr_in	addr_send;
@@ -80,7 +80,6 @@ int main() {
     getNewSpreadsheet();
     receiveUpdates();
     drawSpreadsheet();
-    // displayMenu();
 
     pthread_t sendThread;
     int sendVal = pthread_create(&sendThread, NULL, (void *) sendToServer, NULL);
@@ -104,7 +103,6 @@ int main() {
     printf("[+] Disconnected from the server\n");
     close(sock_send);
     printf("[+] Socket closed...Bye!\n");
-    // printf("[-] Bye!\n");
     return 0;
 }
 
@@ -130,27 +128,21 @@ void receiveFromServer() {
 
             if(strcmp(addr, "update") == 0) {
                 drawSpreadsheet();
-                printf("\n%s", val);
+                printf("\n%s\n", val);
                 printPrompt();
                 continue;
-            } /*else if(strcmp(addr, "count") == 0){
+            } else if(strcmp(addr, "count") == 0){
                 clientCount = atoi(val);
                 drawSpreadsheet();
                 printPrompt();
-            }*/
+                continue;
+            }
 
             int x = addr[0] - '0';
             int y = addr[1] - '0';
-            // if((x == 0) || (y == 0)) {
-            //     drawSpreadsheet();
-            //     printf("\n[-] ERROR: Invalid request (ignored)");
-            //     printPrompt();
-            //     continue;
-            // }
             placeOnGrid(x, y, val);
             drawSpreadsheet();
             printPrompt();
-            // displayMenu();
 
         if(endFlag) {
             break;
@@ -263,8 +255,8 @@ void receiveUpdates() {
 }
 
 void printPrompt() {
-    // printf("Total number of clients online: %d", clientCount);
     if(atMenu) {
+        printf("Total number of clients online: %d", clientCount);
         displayMenu();
     } else if(promptNo) {
         printf("\nEnter the cell address you would like to edit: %s\n", promptInput);

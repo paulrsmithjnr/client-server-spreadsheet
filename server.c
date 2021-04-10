@@ -146,19 +146,21 @@ void *handleClient(void *arg) {
     strcpy(client->name, buffer);
 
     clientCount++;
+
     printf("\n[+] %s (client %d) connected successfully\n", client->name, client->uid);
     printf("[+] Total number of clients: %d\n", clientCount);
 
-    sprintf(message, "update:[+] %s (client %d) joined the session", client->name, client->uid);
-    broadcastMessageToAllExcept(message, client->uid);
-
     updateClientSpreadsheet(client->uid);
 
-    // sleep(0.5);
-    // sprintf(message, "count:%d", clientCount);
-    // broadcastMessage(message);
+    sprintf(message, "count:%d", clientCount);
+    broadcastMessage(message);
+
+    sleep(0.5);
+
+    sprintf(message, "update:[+] %s (client %d) joined the session", client->name, client->uid);
+    broadcastMessageToAllExcept(message, client->uid);
     
-    while (1){
+    while (1) {
         x = 0;
         y = 0;
         
@@ -250,20 +252,22 @@ void *handleClient(void *arg) {
         strcat(details, cellVal);
         broadcastMessage(details);
 
-        sleep(1);
+        sleep(0.5);
         sprintf(message, "update:[+] %s (client %d) updated spreadsheet with %s -> %s", client->name, client->uid, cellVal, cellAddr);
         broadcastMessageToAllExcept(message, client->uid);
         
     }
     
     printf("\n[-] %s (client %d) disconnected", client->name, client->uid);
-    close(client->sockfd);
     clientCount--;
     if(client->uid != 0) {
         if(!endFlag) {
             printf("\n[-] Total number of clients: %d\n", clientCount);
-            // sprintf(message, "count:%d", clientCount);
-            // broadcastMessage(message);
+            sprintf(message, "count:%d", clientCount);
+            broadcastMessage(message);
+            sleep(0.5);
+            sprintf(message, "update:[+] %s (client %d) left the session", client->name, client->uid);
+            broadcastMessageToAllExcept(message, client->uid);
         }
     } else {
         while(clientCount > 0);
@@ -277,6 +281,7 @@ void *handleClient(void *arg) {
         close(sock_recv);
         exit(0);
     }
+    close(client->sockfd);
     removeFromClientArray(client->uid);
     free(client);
     pthread_detach(pthread_self());
@@ -359,12 +364,15 @@ void broadcastMessageToAllExcept(char *message, int uid) {
 
     strcpy(buffer, message);
     for(int i = 0; i < MAX_CLIENTS; i++) {
-        if(clients[i] && clients[i]->uid != uid) {
-            bytes_sent = send(clients[i]->sockfd, buffer, send_len, 0);
-            if(bytes_sent < 0) {
-                printf("\n[-] Error in sending message to Client %d: %s\n", clients[i]->uid, clients[i]->name);
-                break;
+        if(clients[i]) {
+            if(clients[i]->uid != uid) {
+                bytes_sent = send(clients[i]->sockfd, buffer, send_len, 0);
+                if(bytes_sent < 0) {
+                    printf("\n[-] Error in sending message to Client %d: %s\n", clients[i]->uid, clients[i]->name);
+                    break;
+                }
             }
+            
         }
     }
 
