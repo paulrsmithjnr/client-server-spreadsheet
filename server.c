@@ -159,6 +159,12 @@ void *handleClient(void *arg) {
 
     sprintf(message, "update:[+] %s (client %d) joined the session", client->name, client->uid);
     broadcastMessageToAllExcept(message, client->uid);
+
+    if(client->uid == 0) {
+        char first[6];
+        strcpy(first, "first");
+        messageClient(first, client->uid);
+    }
     
     while (1) {
         x = 0;
