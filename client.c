@@ -12,7 +12,7 @@
 
 #define BUFFER_SIZE	1024
 #define	SERVER_IP	"127.0.0.1"
-#define SERVER_PORT	2121
+#define SERVER_PORT	2122
 #define NUM_RANGE 9
 
 //function declarations
@@ -149,10 +149,6 @@ void sendToServer() {
     char buffer[BUFFER_SIZE], cellAddr[4], cellVal[80], details[90], menuResponse[2];
 
     while(1) {
-        /* send some data */
-
-        // printPrompt();
-        ////////    HANDLING MENU   ////////
         if(endFlag) {
             break;
         }
@@ -163,7 +159,7 @@ void sendToServer() {
         switch(menuResponse[0]){
             case '1': 
                 atMenu = 0;
-                // printf("This is option 1");
+
                 printPrompt();
                 scanf("%s",cellAddr);
 
@@ -209,71 +205,7 @@ void sendToServer() {
                 break;
         }
         ////////////////////////////////////
-        
-        // scanf("%s",cellAddr);
-        // strcpy(promptInput, cellAddr);
-        // if (strcmp(cellAddr,"quit") == 0){
-        //     strcpy(buffer, "shutdown");
-        //     send_len = strlen("shutdown");
-        //     bytes_sent = send(sock_send, buffer, send_len, 0);
-        //     endFlag = 1;
-        //     break;
-        // } else if(strlen(cellAddr) != 2) {
-        //     printf("\n ** ERROR: Invalid cell address **\n");
-        //     continue;
-        // } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
-        //     printf("\n ** ERROR: Invalid cell address **\n");
-        //     continue;
-        // }
-        // promptNo = 1;
-
-        // printf("Enter value to input into the selected cell: ");
-        // scanf("%s", cellVal);
-
-        // //send cell details (address:value) to server
-        // strcpy(details, cellAddr);
-        // strcat(details, ":");
-        // strcat(details, cellVal);
-        // strcpy(buffer, details);
-        // send_len=strlen(details);
-        // bytes_sent=send(sock_send,buffer,send_len,0);
-
-        // promptNo = 0;
-        // promptInput[0] = '\0';
     }
-
-    // /* send some data */
-    // printPrompt();
-    // scanf("%s",cellAddr);
-    // strcpy(promptInput, cellAddr);
-    // if (strcmp(cellAddr,"quit") == 0){
-    //     strcpy(buffer, "shutdown");
-    //     send_len = strlen("shutdown");
-    //     bytes_sent = send(sock_send, buffer, send_len, 0);
-    //     endFlag = 1;
-    //     return;
-    // } else if(strlen(cellAddr) != 2) {
-    //     printf("\n ** ERROR: Invalid cell address **\n");
-    //     return;
-    // } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
-    //     printf("\n ** ERROR: Invalid cell address **\n");
-    //     return;
-    // }
-    // promptNo = 1;
-
-    // printf("Enter value to input into the selected cell: ");
-    // scanf("%s", cellVal);
-
-    // //send cell details (address:value) to server
-    // strcpy(details, cellAddr);
-    // strcat(details, ":");
-    // strcat(details, cellVal);
-    // strcpy(buffer, details);
-    // send_len=strlen(details);
-    // bytes_sent=send(sock_send,buffer,send_len,0);
-
-    // promptNo = 0;
-    // promptInput[0] = '\0';
 }
 
 void receiveUpdates() {
@@ -292,7 +224,7 @@ void receiveUpdates() {
             break;
         }
 
-        printf("Update received: %s\n", buffer);
+        // printf("Update received: %s\n", buffer);
         addr = strtok(buffer, ":");
         val = strtok(NULL, ":");
 
@@ -303,6 +235,8 @@ void receiveUpdates() {
             continue;
         }
         placeOnGrid(x, y, val);
+        
+        send(sock_send, "Received", strlen("Received"), 0);
     }
 }
 
@@ -380,7 +314,7 @@ void displayMenu() {
     printf("\n\n****************    Hi, %s!   ****************\n\n", name);
     printf("Please enter the number that corresponds with your choice:\n\n");
     printf("\t(1) Update the spreadsheet\n");
-    printf("\t(2) Save the spreadsheet\n");
+    printf("\t(2) Undo last edit made\n");
     printf("\t(3) Leave session\n\n");
     printf("Choice: ");
     // scanf("%s", choice);

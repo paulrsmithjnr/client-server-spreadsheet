@@ -10,7 +10,7 @@
 #include <pthread.h>
 
 #define BUFFER_SIZE	1024
-#define LISTEN_PORT	2121
+#define LISTEN_PORT	2122
 #define NUM_RANGE   9
 #define MAX_CLIENTS 100
 
@@ -41,6 +41,7 @@ double average(char *start, char *end);
 double sum(char *start, char *end);
 double range(char *start, char *end);
 void gridtoFile();
+int getPosition(int uid);
 
 //global declaration of the spreadsheet's grid structure
 char * grid[NUM_RANGE][NUM_RANGE];
@@ -334,7 +335,8 @@ void broadcastMessage(char *message) {
 
 void updateClientSpreadsheet(int uid) {
     // sprintf(cellVal, "%.2lf", resultAvg);
-    char coordinates[3], details[90];
+    char coordinates[3], details[90], buffer[BUFFER_SIZE];
+    int bytes_received, position = getPosition(uid);
     
     // broadcastMessage(details);
     for(int x = 0; x < NUM_RANGE; x++) {
@@ -350,10 +352,21 @@ void updateClientSpreadsheet(int uid) {
             strcat(details, grid[x][y]);
 
             messageClient(details, uid);
-            sleep(0.9);
+            bytes_received=recv(clients[position]->sockfd, buffer, BUFFER_SIZE, 0);
+            buffer[bytes_received]=0;
         }
     }
     messageClient("Done", uid);
+}
+
+int getPosition(int uid) {
+    for(int i = 0; i < MAX_CLIENTS; i++) {
+        if(clients[i]) {
+            if(clients[i]->uid == uid) {
+                return i;
+            }
+        }
+    }
 }
 
 void getNewSpreadsheet() {
