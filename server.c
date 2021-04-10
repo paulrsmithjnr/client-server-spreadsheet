@@ -42,6 +42,7 @@ double sum(char *start, char *end);
 double range(char *start, char *end);
 void gridtoFile();
 int getPosition(int uid);
+void broadcastMessageToAllExcept(char *message, int uid);
 
 //global declaration of the spreadsheet's grid structure
 char * grid[NUM_RANGE][NUM_RANGE];
@@ -137,7 +138,7 @@ int main() {
 
 void *handleClient(void *arg) {
     client_t *client = (client_t *)arg;
-    char buffer[BUFFER_SIZE], *cellAddr, *cellVal, details[90];
+    char buffer[BUFFER_SIZE], *cellAddr, *cellVal, details[90], message[100];
     int bytes_received, x, y;
 
     bytes_received=recv(client->sockfd, buffer, BUFFER_SIZE,0);
@@ -147,6 +148,9 @@ void *handleClient(void *arg) {
     clientCount++;
     printf("\n[+] %s (client %d) connected successfully\n", client->name, client->uid);
     printf("[+] Total number of clients: %d\n", clientCount);
+
+    sprintf(message, "update:[+] %s (client %d) joined the session", client->name, client->uid);
+    broadcastMessageToAllExcept(message, client->uid);
 
     updateClientSpreadsheet(client->uid);
     
@@ -185,7 +189,8 @@ void *handleClient(void *arg) {
                 avgParam2[strlen(avgParam2)-1] = '\0'; //second parameter stored here
 
                 if((strlen(avgParam1) != 2) || (strlen(avgParam2) != 2)) {
-                    strcpy(cellAddr, "00"); //will evoke a pre-handled error - message on the client side
+                    // strcpy(cellAddr, "00"); //will evoke a pre-handled error - message on the client side
+                    continue;
                 } else {
                     double resultAvg = average(avgParam1, avgParam2);
                     sprintf(cellVal, "%.2lf", resultAvg);
@@ -200,7 +205,8 @@ void *handleClient(void *arg) {
                 sumParam2[strlen(sumParam2)-1] = '\0'; //second parameter stored here
 
                 if((strlen(sumParam1) != 2) || (strlen(sumParam2) != 2)) {
-                    strcpy(cellAddr, "00"); //will evoke a pre-handled error - message on the client side
+                    // strcpy(cellAddr, "00"); //will evoke a pre-handled error - message on the client side
+                    continue;
                 } else {
                     double resultSum = sum(sumParam1, sumParam2);
                     sprintf(cellVal, "%.2lf", resultSum);
@@ -215,7 +221,8 @@ void *handleClient(void *arg) {
                 rngParam2[strlen(rngParam2)-1] = '\0'; //second parameter stored here
 
                 if((strlen(rngParam1) != 2) || (strlen(rngParam2) != 2)) {
-                    strcpy(cellAddr, "00"); //will evoke a pre-handled error - message on the client side
+                    // strcpy(cellAddr, "00"); //will evoke a pre-handled error - message on the client side
+                    continue;
                 } else {
                     double resultRng = range(rngParam1, rngParam2);
                     sprintf(cellVal, "%.2lf", resultRng);
@@ -237,7 +244,12 @@ void *handleClient(void *arg) {
         strcpy(details, coordinates);
         strcat(details, ":");
         strcat(details, cellVal);
-        broadcastMessage(details);       
+        broadcastMessage(details);
+
+        sleep(1);
+        sprintf(message, "update:[+] %s (client %d) updated spreadsheet with %s -> %s", client->name, client->uid, cellVal, cellAddr);
+        broadcastMessageToAllExcept(message, client->uid);
+        
     }
     
     printf("\n[-] %s (client %d) disconnected", client->name, client->uid);
@@ -322,6 +334,26 @@ void broadcastMessage(char *message) {
     strcpy(buffer, message);
     for(int i = 0; i < MAX_CLIENTS; i++) {
         if(clients[i]) {
+            bytes_sent = send(clients[i]->sockfd, buffer, send_len, 0);
+            if(bytes_sent < 0) {
+                printf("\n[-] Error in sending message to Client %d: %s\n", clients[i]->uid, clients[i]->name);
+                break;
+            }
+        }
+    }
+
+    pthread_mutex_unlock(&clients_mutex);
+}
+
+void broadcastMessageToAllExcept(char *message, int uid) {
+    pthread_mutex_lock(&clients_mutex);
+
+    char buffer[BUFFER_SIZE];
+    int bytes_sent, send_len = strlen(message);
+
+    strcpy(buffer, message);
+    for(int i = 0; i < MAX_CLIENTS; i++) {
+        if(clients[i] && clients[i]->uid != uid) {
             bytes_sent = send(clients[i]->sockfd, buffer, send_len, 0);
             if(bytes_sent < 0) {
                 printf("\n[-] Error in sending message to Client %d: %s\n", clients[i]->uid, clients[i]->name);

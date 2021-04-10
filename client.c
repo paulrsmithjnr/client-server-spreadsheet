@@ -127,12 +127,21 @@ void receiveFromServer() {
             addr = strtok(buffer, ":");
             val = strtok(NULL, ":");
 
-            int x = addr[0] - '0';
-            int y = addr[1] - '0';
-            if((x == 0) || (y == 0)) {
-                printf("\n ** ERROR: Invalid request (ignored) **\n");
+            if(strcmp(addr, "update") == 0) {
+                drawSpreadsheet();
+                printf("\n%s", val);
+                printPrompt();
                 continue;
             }
+
+            int x = addr[0] - '0';
+            int y = addr[1] - '0';
+            // if((x == 0) || (y == 0)) {
+            //     drawSpreadsheet();
+            //     printf("\n[-] ERROR: Invalid request (ignored)");
+            //     printPrompt();
+            //     continue;
+            // }
             placeOnGrid(x, y, val);
             drawSpreadsheet();
             printPrompt();
@@ -165,11 +174,23 @@ void sendToServer() {
 
                 strcpy(promptInput, cellAddr);
                 if(strlen(cellAddr) != 2) {
-                    printf("\n [-] ERROR: Invalid cell address \n");
-                    continue;
+                    drawSpreadsheet();
+                    printf("\n[-] ERROR: Invalid cell address \n");
+
+                    atMenu = 1;
+                    break;
                 } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
-                    printf("\n [-] ERROR: Invalid cell address \n");
-                    continue;
+                    drawSpreadsheet();
+                    printf("\n[-] ERROR: Invalid cell address \n");
+
+                    atMenu = 1;
+                    break;
+                } else if((cellAddr[0] < 'a' && cellAddr[0] < 'A') || (cellAddr[0] > 'i' && cellAddr[0] > 'I')) {
+                    drawSpreadsheet();
+                    printf("\n[-] ERROR: Invalid cell address \n");
+
+                    atMenu = 1;
+                    break;
                 }
                 promptNo = 1;
 
@@ -230,10 +251,6 @@ void receiveUpdates() {
 
         int x = addr[0] - '0';
         int y = addr[1] - '0';
-        if((x == 0) || (y == 0)) {
-            printf("\n ** ERROR: Invalid request (ignored) **\n");
-            continue;
-        }
         placeOnGrid(x, y, val);
         
         send(sock_send, "Received", strlen("Received"), 0);
@@ -266,7 +283,7 @@ void drawSpreadsheet() {
     char * const HORIZONTAL_LINE = "  +--------+--------+--------+--------+--------+--------+--------+--------+--------+";
     int const cellWidthPaddingVal = 8;
     
-    for(int i = 0; i < 20; i++) {
+    for(int i = 0; i < 40; i++) {
         printf("\n");
     }
     printf("\nSPREADSHEET TITLE: %s\n\n", nameOfSpreadsheet);
