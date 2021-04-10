@@ -12,7 +12,7 @@
 
 #define BUFFER_SIZE	1024
 #define	SERVER_IP	"127.0.0.1"
-#define SERVER_PORT	2122
+#define SERVER_PORT	2121
 #define NUM_RANGE 9
 
 //function declarations
@@ -32,8 +32,8 @@ char * grid[NUM_RANGE][NUM_RANGE];
 //global socket declaration
 int sock_send;
 
-//global variable to keep track of prompts
-int promptNo = 0;
+//global variables to keep prompt state
+int atMenu = 1, promptNo = 0;
 char promptInput[4];
 
 //global declaration of flag
@@ -100,10 +100,10 @@ int main() {
             break;
         }
     }
-    printf("[-] Disconnected from the server\n");
+    printf("[+] Disconnected from the server\n");
     close(sock_send);
-    printf("[-] Socket closed\n");
-    printf("[-] Bye!\n");
+    printf("[+] Socket closed...Bye!\n");
+    // printf("[-] Bye!\n");
     return 0;
 }
 
@@ -146,41 +146,100 @@ void receiveFromServer() {
 
 void sendToServer() {
     int	send_len, bytes_sent;
-    char buffer[BUFFER_SIZE], cellAddr[4], cellVal[80], details[90];
+    char buffer[BUFFER_SIZE], cellAddr[4], cellVal[80], details[90], menuResponse[2];
 
     while(1) {
         /* send some data */
-        printPrompt();
-        scanf("%s",cellAddr);
-        strcpy(promptInput, cellAddr);
-        if (strcmp(cellAddr,"quit") == 0){
-            strcpy(buffer, "shutdown");
-            send_len = strlen("shutdown");
-            bytes_sent = send(sock_send, buffer, send_len, 0);
-            endFlag = 1;
+
+        // printPrompt();
+        ////////    HANDLING MENU   ////////
+        if(endFlag) {
             break;
-        } else if(strlen(cellAddr) != 2) {
-            printf("\n ** ERROR: Invalid cell address **\n");
-            continue;
-        } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
-            printf("\n ** ERROR: Invalid cell address **\n");
-            continue;
         }
-        promptNo = 1;
 
-        printf("Enter value to input into the selected cell: ");
-        scanf("%s", cellVal);
+        printPrompt();
+        scanf("%s", menuResponse);
 
-        //send cell details (address:value) to server
-        strcpy(details, cellAddr);
-        strcat(details, ":");
-        strcat(details, cellVal);
-        strcpy(buffer, details);
-        send_len=strlen(details);
-        bytes_sent=send(sock_send,buffer,send_len,0);
+        switch(menuResponse[0]){
+            case '1': 
+                atMenu = 0;
+                // printf("This is option 1");
+                printPrompt();
+                scanf("%s",cellAddr);
 
-        promptNo = 0;
-        promptInput[0] = '\0';
+                strcpy(promptInput, cellAddr);
+                if(strlen(cellAddr) != 2) {
+                    printf("\n [-] ERROR: Invalid cell address \n");
+                    continue;
+                } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
+                    printf("\n [-] ERROR: Invalid cell address \n");
+                    continue;
+                }
+                promptNo = 1;
+
+                printf("Enter value to input into the selected cell: ");
+                scanf("%s", cellVal);
+
+                //send cell details (address:value) to server
+                strcpy(details, cellAddr);
+                strcat(details, ":");
+                strcat(details, cellVal);
+                strcpy(buffer, details);
+                send_len=strlen(details);
+                bytes_sent=send(sock_send,buffer,send_len,0);
+
+                promptNo = 0;
+                promptInput[0] = '\0';
+
+                atMenu = 1;
+                break;
+
+            case '2':
+                printf("This is option 2");
+                break;
+            case '3':
+                strcpy(buffer, "shutdown");
+                send_len = strlen("shutdown");
+                bytes_sent = send(sock_send, buffer, send_len, 0);
+                endFlag = 1;
+                break;
+            default:
+                drawSpreadsheet();
+                printf("\n[-] Invalid response! Try again");
+                break;
+        }
+        ////////////////////////////////////
+        
+        // scanf("%s",cellAddr);
+        // strcpy(promptInput, cellAddr);
+        // if (strcmp(cellAddr,"quit") == 0){
+        //     strcpy(buffer, "shutdown");
+        //     send_len = strlen("shutdown");
+        //     bytes_sent = send(sock_send, buffer, send_len, 0);
+        //     endFlag = 1;
+        //     break;
+        // } else if(strlen(cellAddr) != 2) {
+        //     printf("\n ** ERROR: Invalid cell address **\n");
+        //     continue;
+        // } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
+        //     printf("\n ** ERROR: Invalid cell address **\n");
+        //     continue;
+        // }
+        // promptNo = 1;
+
+        // printf("Enter value to input into the selected cell: ");
+        // scanf("%s", cellVal);
+
+        // //send cell details (address:value) to server
+        // strcpy(details, cellAddr);
+        // strcat(details, ":");
+        // strcat(details, cellVal);
+        // strcpy(buffer, details);
+        // send_len=strlen(details);
+        // bytes_sent=send(sock_send,buffer,send_len,0);
+
+        // promptNo = 0;
+        // promptInput[0] = '\0';
     }
 
     // /* send some data */
@@ -248,11 +307,13 @@ void receiveUpdates() {
 }
 
 void printPrompt() {
-    if(promptNo) {
-        printf("\nEnter the cell address you would like to edit (Please enter quit to leave): %s\n", promptInput);
+    if(atMenu) {
+        displayMenu();
+    } else if(promptNo) {
+        printf("\nEnter the cell address you would like to edit: %s\n", promptInput);
         printf("Enter value to input into the selected cell: ");
     } else {
-        printf("\nEnter the cell address you would like to edit (Please enter quit to leave): ");
+        printf("\nEnter the cell address you would like to edit: ");
     }
     fflush(stdout);
 }
@@ -316,30 +377,27 @@ void placeOnGrid(int x, int y, char* c){
 void displayMenu() {
     char choice[2];
 
-    while(1) {
-        drawSpreadsheet();
-        printf("\n\n****************    Hi, %s!   ****************\n\n", name);
-        printf("Please enter the number that corresponds with your choice:\n\n");
-        printf("\t(1) Update the spreadsheet\n");
-        printf("\t(2) Save the spreadsheet\n");
-        printf("\t(3) Exit\n\n");
-        printf("Choice: ");
-        scanf("%s", choice);
+    printf("\n\n****************    Hi, %s!   ****************\n\n", name);
+    printf("Please enter the number that corresponds with your choice:\n\n");
+    printf("\t(1) Update the spreadsheet\n");
+    printf("\t(2) Save the spreadsheet\n");
+    printf("\t(3) Leave session\n\n");
+    printf("Choice: ");
+    // scanf("%s", choice);
 
-        switch(choice[0]){
-            case '1': 
-                // printf("This is option 1");
-                sendToServer();
-                break;
-            case '2':
-                printf("This is option 2");
-                break;
-            case '3':
-                printf("Goodbye!");
-                exit(0);
-                break;
-            default:
-                break;
-        }
-    }
+    // switch(choice[0]){
+    //     case '1': 
+    //         // printf("This is option 1");
+    //         sendToServer();
+    //         break;
+    //     case '2':
+    //         printf("This is option 2");
+    //         break;
+    //     case '3':
+    //         printf("Goodbye!");
+    //         exit(0);
+    //         break;
+    //     default:
+    //         break;
+    // }
 }

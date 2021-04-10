@@ -10,7 +10,7 @@
 #include <pthread.h>
 
 #define BUFFER_SIZE	1024
-#define LISTEN_PORT	2122
+#define LISTEN_PORT	2121
 #define NUM_RANGE   9
 #define MAX_CLIENTS 100
 
