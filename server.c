@@ -773,3 +773,29 @@ void gridtoFile(){
      }
      fclose(fptr);
 }
+
+void getFileNames() {
+    FILE *fptr;
+    char fileName[20];
+    char message[200];
+
+    fptr = fopen("savedSpreadsheets.txt", "r");
+
+    int i = 0;
+    if (fptr == NULL) {
+        printf("\n[-] 'savedSpreadsheets.txt' file not found\n");
+    } else {
+        strcpy(message, "files:");
+
+        fscanf(fptr, "%s\n", fileName);
+        strcat(message, fileName);
+        while(!feof(fptr)) {
+            
+            fscanf(fptr, "%s\n", fileName);
+            strcat(message, ":");
+            strcat(message, fileName);            
+        }
+        messageClient(message, 0);
+    }
+    fclose(fptr);
+}
