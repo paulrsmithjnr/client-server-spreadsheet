@@ -775,10 +775,12 @@ void saveWorksheet(){
         printf("ERROR :File was not created");
         exit(EXIT_FAILURE);
     }
-     for(int i = 0; i < NUM_RANGE; i++) {
+    for(int i = 0; i < NUM_RANGE; i++) {
         for(int j = 0; j < NUM_RANGE; j++) {
-            fprintf(fptr,"%d%d:%s\n", i, j, grid[i][j]);
+            if(strcmp(grid[i][j], " ") != 0) {
+                fprintf(fptr,"%d%d:%s\n", i, j, grid[i][j]);
+            }
         }
-     }
-     fclose(fptr);
+    }
+    fclose(fptr);
 }
