@@ -10,7 +10,7 @@
 #include <pthread.h>
 
 #define BUFFER_SIZE	1024
-#define LISTEN_PORT	2122
+#define LISTEN_PORT	2123
 #define NUM_RANGE   9
 #define MAX_CLIENTS 100
 #define EDIT_STACK_SIZE 20
@@ -42,7 +42,7 @@ int stringToNumber(char *string);
 double average(char *start, char *end);
 double sum(char *start, char *end);
 double range(char *start, char *end);
-void gridtoFile();
+void saveWorksheet(char *filename);
 int getPosition(int uid);
 void broadcastMessageToAllExcept(char *message, int uid);
 void pushToClientEditStack(int uid, char *coordinates);
@@ -205,7 +205,8 @@ void *handleClient(void *arg) {
         } else if (strcmp(buffer, "undo") == 0){
             char *coordinates = popFromClientEditStack(client->uid);
             if(coordinates) {
-            
+
+
                 char undoMessage[11];
                 // char *coordinates = popFromClientEditStack(client->uid);
                 int xCoordinate = coordinates[0] - '0', yCoordinate = coordinates[1] - '0';
@@ -229,6 +230,18 @@ void *handleClient(void *arg) {
         
         cellAddr = strtok(buffer, ":");
         cellVal = strtok(NULL, ":");
+
+        if(strcmp(cellAddr, "saveSheet")==0){
+            if(client->uid == 0) {
+                printf("\n[+] %s (client %d) saved the spreadsheet\n", client->name, client->uid);
+                sleep(0.5);
+                sprintf(message, "update:[+] %s (client %d) saved the spreadsheet", client->name, client->uid);
+                broadcastMessageToAllExcept(message, client->uid);
+                saveWorksheet(cellVal);
+            }
+            continue;
+        }
+
         printf("[+] %s (client %d): %s -> %s\n", client->name, client->uid, cellVal, cellAddr);
 
         if((cellVal[0] == '=')) { //checking for the average function
@@ -759,16 +772,23 @@ double range(char *start, char *end) {
 }
 
 //write the contents of the grid to a file
-void gridtoFile(){
-    FILE *fptr;// file pointer 
-    fptr=fopen("gridfile.txt","w");
+void saveWorksheet(char *filename){
+    char file[50];
+    FILE *fptr;// file pointer
+
+    strcpy(file, filename);
+    strcat(file, ".txt");
+
+    fptr=fopen(file,"w");
     if(fptr==NULL){
         printf("ERROR :File was not created");
         exit(EXIT_FAILURE);
     }
-     for(int i = 0; i < NUM_RANGE; i++) {
+    for(int i = 0; i < NUM_RANGE; i++) {
         for(int j = 0; j < NUM_RANGE; j++) {
-            fprintf(fptr,"%d%d:%s\n", i, j, grid[i][j]);
+            if(strcmp(grid[i][j], " ") != 0) {
+                fprintf(fptr,"%d%d:%s\n", i, j, grid[i][j]);
+            }
         }
      }
      fclose(fptr);
