@@ -42,7 +42,7 @@ int stringToNumber(char *string);
 double average(char *start, char *end);
 double sum(char *start, char *end);
 double range(char *start, char *end);
-void saveWorksheet();
+void saveWorksheet(char *filename);
 int getPosition(int uid);
 void broadcastMessageToAllExcept(char *message, int uid);
 void pushToClientEditStack(int uid, char *coordinates);
@@ -202,15 +202,6 @@ void *handleClient(void *arg) {
                 broadcastMessageToAllExcept(message, client->uid);
             }
             continue;
-        } else if (strcmp(buffer, "saveSheet") == 0){
-            if(client->uid == 0) {
-                printf("\n[+] %s (client %d) saved the spreadsheet\n", client->name, client->uid);
-                sleep(0.5);
-                sprintf(message, "update:[+] %s (client %d) saved the spreadsheet", client->name, client->uid);
-                broadcastMessageToAllExcept(message, client->uid);
-                saveWorksheet();
-            }
-            continue;
         } else if (strcmp(buffer, "undo") == 0){
             char *coordinates = popFromClientEditStack(client->uid);
             if(coordinates) {
@@ -239,6 +230,18 @@ void *handleClient(void *arg) {
         
         cellAddr = strtok(buffer, ":");
         cellVal = strtok(NULL, ":");
+
+        if(strcmp(cellAddr, "saveSheet")==0){
+            if(client->uid == 0) {
+                printf("\n[+] %s (client %d) saved the spreadsheet\n", client->name, client->uid);
+                sleep(0.5);
+                sprintf(message, "update:[+] %s (client %d) saved the spreadsheet", client->name, client->uid);
+                broadcastMessageToAllExcept(message, client->uid);
+                saveWorksheet(cellVal);
+            }
+            continue;
+        }
+
         printf("[+] %s (client %d): %s -> %s\n", client->name, client->uid, cellVal, cellAddr);
 
         if((cellVal[0] == '=')) { //checking for the average function
@@ -769,9 +772,14 @@ double range(char *start, char *end) {
 }
 
 //write the contents of the grid to a file
-void saveWorksheet(){
-    FILE *fptr;// file pointer 
-    fptr=fopen("gridfile.txt","w");
+void saveWorksheet(char *filename){
+    char file[50];
+    FILE *fptr;// file pointer
+
+    strcpy(file, filename);
+    strcat(file, ".txt");
+
+    fptr=fopen(file,"w");
     if(fptr==NULL){
         printf("ERROR :File was not created");
         exit(EXIT_FAILURE);

@@ -188,6 +188,9 @@ void sendToServer() {
         scanf("%s", menuResponse);
 
         if (isFirstClient) {
+            char filename[20];
+            char info[30];
+
             switch(menuResponse[0]){
                 case '2':
                     strcpy(buffer, "clearSheet");
@@ -196,8 +199,12 @@ void sendToServer() {
                     break;
                 
                 case '3':
-                    strcpy(buffer, "saveSheet");
-                    send_len = strlen("saveSheet");
+                    printf("\nPlease enter the name you would like to save \nthe spreadsheet as (without file extension): ");
+                    scanf("%s", filename);
+                    strcpy(info, "saveSheet:");
+                    strcat(info, filename);
+                    strcpy(buffer,info);
+                    send_len = strlen(info);
                     bytes_sent = send(sock_send, buffer, send_len, 0);
                     drawSpreadsheet();
                     printf("\n[+] You have saved the spreadsheet\n");
