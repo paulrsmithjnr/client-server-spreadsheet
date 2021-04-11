@@ -155,7 +155,7 @@ void receiveFromServer() {
             int yCoordinate = val[1] - '0';
             placeOnGrid(xCoordinate, yCoordinate, " ");
 
-            sleep(0.5);
+            sleep(1);
             drawSpreadsheet();
             printPrompt();
             continue;
@@ -177,6 +177,7 @@ void sendToServer() {
     int	send_len, bytes_sent;
     char buffer[BUFFER_SIZE], cellAddr[4], cellVal[80], details[90], menuResponse[2];
 
+    printf("[+] Loading spreadsheet...\n");
     sleep(1); //wait for count to be updated
     drawSpreadsheet();
     while(1) {
@@ -525,7 +526,7 @@ void displayMenu() {
     printf("\n\n****************    Hi, %s!   ****************\n\n", name);
     printf("Please enter the number that corresponds with your choice:\n\n");
     printf("\t(1) Update the spreadsheet\n");
-    printf("\t(2) Undo your last edit\n");
+    printf("\t(2) Undo your most recent addition\n");
     printf("\t(3) Clear cell content\n");
     printf("\t(4) Leave session\n\n");
     printf("Choice: ");
@@ -537,8 +538,9 @@ void displayFirstClientMenu() {
     printf("\t(1) Open new spreadsheet\n");
     printf("\t(2) Clear current spreadsheet\n");
     printf("\t(3) Save current spreadsheet\n");
+    printf("\t(NA) Save current spreadsheet as...\n");
     printf("\t(4) Update current spreadsheet\n");
-    printf("\t(5) Undo your last edit to current spreadsheet\n");
+    printf("\t(5) Undo your most recent addition to current spreadsheet\n");
      printf("\t(6) Clear cell content\n");
     printf("\t(7) End session\n\n");
     printf("Choice: ");
