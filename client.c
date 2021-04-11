@@ -182,18 +182,21 @@ void sendToServer() {
                         printf("\n[-] ERROR: Invalid cell address \n");
 
                         atMenu = 1;
+                        sleep(0.5);
                         break;
                     } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
                         drawSpreadsheet();
                         printf("\n[-] ERROR: Invalid cell address \n");
 
                         atMenu = 1;
+                        sleep(0.5);
                         break;
                     } else if(!( (cellAddr[0] >= 65 && cellAddr[0] <= 73) || (cellAddr[0] >= 97 && cellAddr[0] <= 105) )) {
                         drawSpreadsheet();
                         printf("\n[-] ERROR: Invalid cell address \n");
 
                         atMenu = 1;
+                        sleep(0.5);
                         break;
                     }
                     promptNo = 1;
@@ -213,20 +216,24 @@ void sendToServer() {
                     promptInput[0] = '\0';
 
                     atMenu = 1;
+                    sleep(0.5);
                     break;
 
                 case '5':
                     printf("This is option 2");
+                    sleep(0.5);
                     break;
                 case '6':
                     strcpy(buffer, "shutdown");
                     send_len = strlen("shutdown");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
                     endFlag = 1;
+                    sleep(0.5);
                     break;
                 default:
                     drawSpreadsheet();
                     printf("\n[-] Invalid response! Try again\n");
+                    sleep(0.5);
                     break;
             }
 
@@ -245,18 +252,21 @@ void sendToServer() {
                         printf("\n[-] ERROR: Invalid cell address \n");
 
                         atMenu = 1;
+                        sleep(0.5);
                         break;
                     } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
                         drawSpreadsheet();
                         printf("\n[-] ERROR: Invalid cell address \n");
 
                         atMenu = 1;
+                        sleep(0.5);
                         break;
                     } else if(!( (cellAddr[0] >= 65 && cellAddr[0] <= 73) || (cellAddr[0] >= 97 && cellAddr[0] <= 105) )) {
                         drawSpreadsheet();
                         printf("\n[-] ERROR: Invalid cell address \n");
 
                         atMenu = 1;
+                        sleep(0.5);
                         break;
                     }
                     promptNo = 1;
@@ -276,20 +286,24 @@ void sendToServer() {
                     promptInput[0] = '\0';
 
                     atMenu = 1;
+                    sleep(0.5);
                     break;
 
                 case '2':
                     printf("This is option 2");
+                    sleep(0.5);
                     break;
                 case '3':
                     strcpy(buffer, "shutdown");
                     send_len = strlen("shutdown");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
                     endFlag = 1;
+                    sleep(0.5);
                     break;
                 default:
                     drawSpreadsheet();
                     printf("\n[-] Invalid response! Try again\n");
+                    sleep(0.5);
                     break;
             }
         }
