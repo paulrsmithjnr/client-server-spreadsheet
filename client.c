@@ -261,12 +261,49 @@ void sendToServer() {
                     bytes_sent = send(sock_send, buffer, send_len, 0);
                     drawSpreadsheet();
                     break;
+
                 case '6':
+
+                    printf("\nPlease enter the cell address you want to clear: ");
+                    scanf("%s",cellAddr);
+
+                    if(strlen(cellAddr) != 2) {
+                        drawSpreadsheet();
+                        printf("\n[-] ERROR: Invalid cell address \n");
+
+                        atMenu = 1;
+                        break;
+                    } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
+                        drawSpreadsheet();
+                        printf("\n[-] ERROR: Invalid cell address \n");
+
+                        atMenu = 1;
+                        break;
+                    } else if(!( (cellAddr[0] >= 65 && cellAddr[0] <= 73) || (cellAddr[0] >= 97 && cellAddr[0] <= 105) )) {
+                        drawSpreadsheet();
+                        printf("\n[-] ERROR: Invalid cell address \n");
+
+                        atMenu = 1;
+                        break;
+                    }
+
+                    //send cell details (address:value) to server
+                    strcpy(details, cellAddr);
+                    strcat(details, ": ");
+                    strcpy(buffer, details);
+                    send_len=strlen(details);
+                    bytes_sent=send(sock_send,buffer,send_len,0);
+
+                    atMenu = 1;
+                    break;
+
+                case '7':
                     strcpy(buffer, "shutdown");
                     send_len = strlen("shutdown");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
                     endFlag = 1;
                     break;
+
                 default:
                     drawSpreadsheet();
                     printf("\n[-] Invalid response! Try again\n");
@@ -328,12 +365,48 @@ void sendToServer() {
                     sleep(0.5);
                     drawSpreadsheet();
                     break;
+
                 case '3':
+                    printf("\nPlease enter the cell address you want to clear: ");
+                    scanf("%s",cellAddr);
+
+                    if(strlen(cellAddr) != 2) {
+                        drawSpreadsheet();
+                        printf("\n[-] ERROR: Invalid cell address \n");
+
+                        atMenu = 1;
+                        break;
+                    } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
+                        drawSpreadsheet();
+                        printf("\n[-] ERROR: Invalid cell address \n");
+
+                        atMenu = 1;
+                        break;
+                    } else if(!( (cellAddr[0] >= 65 && cellAddr[0] <= 73) || (cellAddr[0] >= 97 && cellAddr[0] <= 105) )) {
+                        drawSpreadsheet();
+                        printf("\n[-] ERROR: Invalid cell address \n");
+
+                        atMenu = 1;
+                        break;
+                    }
+
+                    //send cell details (address:value) to server
+                    strcpy(details, cellAddr);
+                    strcat(details, ": ");
+                    strcpy(buffer, details);
+                    send_len=strlen(details);
+                    bytes_sent=send(sock_send,buffer,send_len,0);
+
+                    atMenu = 1;
+                    break;
+
+                case '4':
                     strcpy(buffer, "shutdown");
                     send_len = strlen("shutdown");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
                     endFlag = 1;
                     break;
+
                 default:
                     drawSpreadsheet();
                     printf("\n[-] Invalid response! Try again\n");
@@ -453,7 +526,8 @@ void displayMenu() {
     printf("Please enter the number that corresponds with your choice:\n\n");
     printf("\t(1) Update the spreadsheet\n");
     printf("\t(2) Undo your last edit\n");
-    printf("\t(3) Leave session\n\n");
+    printf("\t(3) Clear cell content\n");
+    printf("\t(4) Leave session\n\n");
     printf("Choice: ");
 }
 
@@ -465,6 +539,7 @@ void displayFirstClientMenu() {
     printf("\t(3) Save current spreadsheet\n");
     printf("\t(4) Update current spreadsheet\n");
     printf("\t(5) Undo your last edit to current spreadsheet\n");
-    printf("\t(6) End session\n\n");
+     printf("\t(6) Clear cell content\n");
+    printf("\t(7) End session\n\n");
     printf("Choice: ");
 }
