@@ -793,11 +793,11 @@ void saveWorksheet(char *filename){
      }
      fclose(fptr);
 
-     fptr2 = fopen("savedSpreadsheets.txt", "w");
+     fptr2 = fopen("savedSpreadsheets.txt", "a");
      if (fptr2 == NULL) {
         printf("\n[-] 'savedSpreadsheets.txt' file not found\n");
     } else {
-        fprintf(fptr,"%s\n", file);
+        fprintf(fptr,"%s\n", filename);
     }
     fclose(fptr2);
 }
