@@ -20,6 +20,7 @@ typedef struct client_t{
 	int sockfd;
     char name[20];
     int uid;
+    char *editsStack[20];
 } client_t;
 
 //function declarations
@@ -43,6 +44,9 @@ double range(char *start, char *end);
 void gridtoFile();
 int getPosition(int uid);
 void broadcastMessageToAllExcept(char *message, int uid);
+void pushToClientEditStack(int uid);
+void popFromClientEditStack(int uid);
+void undo(int x, int y);
 
 //global declaration of the spreadsheet's grid structure
 char * grid[NUM_RANGE][NUM_RANGE];
@@ -409,6 +413,18 @@ void updateClientSpreadsheet(int uid) {
         }
     }
     messageClient("Done", uid);
+}
+
+void pushToClientEditStack(int uid) {
+
+}
+
+void popFromClientEditStack(int uid) {
+
+}
+
+void undo(int x, int y) {
+
 }
 
 int getPosition(int uid) {
