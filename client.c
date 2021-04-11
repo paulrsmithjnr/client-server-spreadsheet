@@ -12,7 +12,7 @@
 
 #define BUFFER_SIZE	1024
 #define	SERVER_IP	"127.0.0.1"
-#define SERVER_PORT	2122
+#define SERVER_PORT	2123
 #define NUM_RANGE 9
 
 //function declarations
@@ -84,7 +84,6 @@ int main() {
     if (strcmp(buffer, "first") == 0) {
         isFirstClient = 1;
     }
-    printf("Buffer (first): %s\n", buffer);
 
     getNewSpreadsheet();
     receiveUpdates();
@@ -200,6 +199,8 @@ void sendToServer() {
                     strcpy(buffer, "saveSheet");
                     send_len = strlen("saveSheet");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
+                    drawSpreadsheet();
+                    printf("\n[+] You have saved the spreadsheet\n");
                     break;
 
                 case '4': 

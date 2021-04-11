@@ -10,7 +10,7 @@
 #include <pthread.h>
 
 #define BUFFER_SIZE	1024
-#define LISTEN_PORT	2122
+#define LISTEN_PORT	2123
 #define NUM_RANGE   9
 #define MAX_CLIENTS 100
 #define EDIT_STACK_SIZE 20
@@ -205,6 +205,7 @@ void *handleClient(void *arg) {
         } else if (strcmp(buffer, "saveSheet") == 0){
             if(client->uid == 0) {
                 printf("\n[+] %s (client %d) saved the spreadsheet\n", client->name, client->uid);
+                sleep(0.5);
                 sprintf(message, "update:[+] %s (client %d) saved the spreadsheet", client->name, client->uid);
                 broadcastMessageToAllExcept(message, client->uid);
                 saveWorksheet();
