@@ -13,6 +13,7 @@
 #define LISTEN_PORT	2122
 #define NUM_RANGE   9
 #define MAX_CLIENTS 100
+#define EDIT_STACK_SIZE 20
 
 //structure definition for a client
 typedef struct client_t{
@@ -20,7 +21,7 @@ typedef struct client_t{
 	int sockfd;
     char name[20];
     int uid;
-    char *editsStack[20];
+    char *editsStack[EDIT_STACK_SIZE];
 } client_t;
 
 //function declarations
@@ -44,9 +45,10 @@ double range(char *start, char *end);
 void gridtoFile();
 int getPosition(int uid);
 void broadcastMessageToAllExcept(char *message, int uid);
-void pushToClientEditStack(int uid);
-void popFromClientEditStack(int uid);
+void pushToClientEditStack(int uid, char *coordinates);
+char *popFromClientEditStack(int uid);
 void undo(int x, int y);
+void clearClientEditStack(int uid);
 
 //global declaration of the spreadsheet's grid structure
 char * grid[NUM_RANGE][NUM_RANGE];
@@ -145,6 +147,8 @@ void *handleClient(void *arg) {
     char buffer[BUFFER_SIZE], *cellAddr, *cellVal, details[90], message[100];
     int bytes_received, x, y;
 
+    clearClientEditStack(client->uid);
+
     bytes_received=recv(client->sockfd, buffer, BUFFER_SIZE,0);
     buffer[bytes_received] = 0;
     strcpy(client->name, buffer);
@@ -195,6 +199,23 @@ void *handleClient(void *arg) {
                 getNewSpreadsheet();
             }
             continue;
+        } else if (strcmp(buffer, "undo") == 0){
+            char *coordinates = popFromClientEditStack(client->uid);
+            if(coordinates) {
+                
+                printf("\n[+] %s (client %d) undid the last edit they made\n", client->name, client->uid);
+                char undoMessage[11];
+                // char *coordinates = popFromClientEditStack(client->uid);
+                int xCoordinate = coordinates[0] - '0', yCoordinate = coordinates[1] - '0';
+
+                undo(xCoordinate, yCoordinate);
+
+                strcpy(undoMessage, "undo:");
+                strcat(undoMessage, coordinates);
+                broadcastMessage(undoMessage);
+            
+            }
+            continue; 
         }
         
         cellAddr = strtok(buffer, ":");
@@ -270,6 +291,7 @@ void *handleClient(void *arg) {
         strcat(details, ":");
         strcat(details, cellVal);
         broadcastMessage(details);
+        pushToClientEditStack(client->uid, coordinates);
 
         sleep(0.5);
         sprintf(message, "update:[+] %s (client %d) updated spreadsheet with %s -> %s", client->name, client->uid, cellVal, cellAddr);
@@ -424,16 +446,52 @@ void updateClientSpreadsheet(int uid) {
     messageClient("Done", uid);
 }
 
-void pushToClientEditStack(int uid) {
+void clearClientEditStack(int uid) {
+    int position = getPosition(uid);
 
+    for(int i = 0; i < EDIT_STACK_SIZE; i++) {
+        clients[position]->editsStack[i] = NULL;
+    }
 }
 
-void popFromClientEditStack(int uid) {
+void pushToClientEditStack(int uid, char *coordinates) {
+    int position =  getPosition(uid);
+    char *string = malloc(sizeof(char *));
+    strcpy(string, coordinates);
 
+    if(clients[position]->editsStack[EDIT_STACK_SIZE-1] != NULL) {
+        clearClientEditStack(uid);
+    }
+
+    for(int i = 0; i < EDIT_STACK_SIZE; i++) {
+        if (!clients[position]->editsStack[i]) {
+            clients[position]->editsStack[i] = string;
+            break;
+        }
+    }
+}
+
+char *popFromClientEditStack(int uid) {
+    int position =  getPosition(uid);
+    char *coordinates = malloc(sizeof(char *));
+
+    for(int i = (EDIT_STACK_SIZE-1); i >= 0 ; i--) {
+
+        if (clients[position]->editsStack[i]) {
+
+            coordinates = clients[position]->editsStack[i];
+            clients[position]->editsStack[i] = NULL;
+            return coordinates;
+
+        }
+
+    }
+
+    return NULL;
 }
 
 void undo(int x, int y) {
-
+    placeOnGrid(x, y, " ");
 }
 
 int getPosition(int uid) {

@@ -148,6 +148,13 @@ void receiveFromServer() {
                 drawSpreadsheet();
                 printPrompt();
                 continue;
+            } else if(strcmp(addr, "undo") == 0){
+                int xCoordinate = val[0] - '0';
+                int yCoordinate = val[1] - '0';
+                placeOnGrid(xCoordinate, yCoordinate, " ");
+                drawSpreadsheet();
+                printPrompt();
+                continue;
             }
 
             int x = addr[0] - '0';
@@ -231,7 +238,9 @@ void sendToServer() {
                     break;
 
                 case '5':
-                    printf("This is option 2");
+                    strcpy(buffer, "undo");
+                    send_len = strlen("undo");
+                    bytes_sent = send(sock_send, buffer, send_len, 0);
                     sleep(0.5);
                     break;
                 case '6':
@@ -301,7 +310,9 @@ void sendToServer() {
                     break;
 
                 case '2':
-                    printf("This is option 2");
+                    strcpy(buffer, "undo");
+                    send_len = strlen("undo");
+                    bytes_sent = send(sock_send, buffer, send_len, 0);
                     sleep(0.5);
                     break;
                 case '3':
