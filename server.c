@@ -42,7 +42,7 @@ int stringToNumber(char *string);
 double average(char *start, char *end);
 double sum(char *start, char *end);
 double range(char *start, char *end);
-void gridtoFile();
+void saveWorksheet();
 int getPosition(int uid);
 void broadcastMessageToAllExcept(char *message, int uid);
 void pushToClientEditStack(int uid, char *coordinates);
@@ -202,10 +202,19 @@ void *handleClient(void *arg) {
                 broadcastMessageToAllExcept(message, client->uid);
             }
             continue;
+        } else if (strcmp(buffer, "saveSheet") == 0){
+            if(client->uid == 0) {
+                printf("\n[+] %s (client %d) saved the spreadsheet\n", client->name, client->uid);
+                sprintf(message, "update:[+] %s (client %d) saved the spreadsheet", client->name, client->uid);
+                broadcastMessageToAllExcept(message, client->uid);
+                saveWorksheet();
+            }
+            continue;
         } else if (strcmp(buffer, "undo") == 0){
             char *coordinates = popFromClientEditStack(client->uid);
             if(coordinates) {
-            
+
+
                 char undoMessage[11];
                 // char *coordinates = popFromClientEditStack(client->uid);
                 int xCoordinate = coordinates[0] - '0', yCoordinate = coordinates[1] - '0';
@@ -759,7 +768,7 @@ double range(char *start, char *end) {
 }
 
 //write the contents of the grid to a file
-void gridtoFile(){
+void saveWorksheet(){
     FILE *fptr;// file pointer 
     fptr=fopen("gridfile.txt","w");
     if(fptr==NULL){

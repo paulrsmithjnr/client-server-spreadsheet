@@ -195,6 +195,13 @@ void sendToServer() {
                     send_len = strlen("clearSheet");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
                     break;
+                
+                case '3':
+                    strcpy(buffer, "saveSheet");
+                    send_len = strlen("saveSheet");
+                    bytes_sent = send(sock_send, buffer, send_len, 0);
+                    break;
+
                 case '4': 
                     atMenu = 0;
 
