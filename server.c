@@ -774,14 +774,14 @@ double range(char *start, char *end) {
 //write the contents of the grid to a file
 void saveWorksheet(char *filename){
     char file[50];
-    FILE *fptr;// file pointer
+    FILE *fptr, *fptr2;// file pointers
 
     strcpy(file, filename);
     strcat(file, ".txt");
 
     fptr=fopen(file,"w");
     if(fptr==NULL){
-        printf("ERROR :File was not created");
+        printf("\n[-]ERROR: File was not created\n");
         exit(EXIT_FAILURE);
     }
     for(int i = 0; i < NUM_RANGE; i++) {
@@ -792,6 +792,14 @@ void saveWorksheet(char *filename){
         }
      }
      fclose(fptr);
+
+     fptr2 = fopen("savedSpreadsheets.txt", "w");
+     if (fptr2 == NULL) {
+        printf("\n[-] 'savedSpreadsheets.txt' file not found\n");
+    } else {
+        fprintf(fptr,"%s\n", file);
+    }
+    fclose(fptr2);
 }
 
 void getFileNames() {
