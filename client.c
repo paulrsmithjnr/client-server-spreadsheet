@@ -128,7 +128,13 @@ void receiveFromServer() {
                 drawSpreadsheet();
                 printPrompt();
                 continue;
+            } else if (strcmp(buffer, "clear") == 0) {
+                getNewSpreadsheet();
+                drawSpreadsheet();
+                printPrompt();
+                continue;
             }
+
             addr = strtok(buffer, ":");
             val = strtok(NULL, ":");
 
@@ -174,7 +180,7 @@ void sendToServer() {
                     strcpy(buffer, "clearSheet");
                     send_len = strlen("clearSheet");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
-                    endFlag = 1;
+                    break;
                 case '4': 
                     atMenu = 0;
 
