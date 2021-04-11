@@ -170,6 +170,11 @@ void sendToServer() {
 
         if (isFirstClient) {
             switch(menuResponse[0]){
+                case '2':
+                    strcpy(buffer, "clearSheet");
+                    send_len = strlen("clearSheet");
+                    bytes_sent = send(sock_send, buffer, send_len, 0);
+                    endFlag = 1;
                 case '4': 
                     atMenu = 0;
 
