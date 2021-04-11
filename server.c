@@ -182,6 +182,14 @@ void *handleClient(void *arg) {
                 endFlag = 1;
             }
             break;
+        }else if (strcmp(buffer, "clearSheet") == 0){
+            if(client->uid == 0) {
+                printf("\n[+] %s (client %d) clearing the sheet\n", client->name, client->uid);
+                char clearMessage[11];
+                strcpy(clearMessage, "clear");
+                broadcastMessage(clearMessage);
+            }
+            break;
         }
         
         cellAddr = strtok(buffer, ":");
