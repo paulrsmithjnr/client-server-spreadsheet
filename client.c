@@ -42,7 +42,7 @@ static volatile int endFlag = 0;
 
 //Display name
 char name[20];
-int isFirstClient = 0;
+static int isFirstClient = 0;
 char nameOfSpreadsheet[50];
 static int clientCount = 0;
 
@@ -76,11 +76,19 @@ int main() {
     scanf("%s", name);
 
     int send_len=strlen(name);
-    int bytes_sent=send(sock_send, name , send_len, 0);
+    int bytes_sent = send(sock_send, name , send_len, 0);
+
+    char buffer[BUFFER_SIZE];
+    int bytes_received = recv(sock_send, buffer, BUFFER_SIZE, 0);
+    buffer[bytes_received] = 0;
+    if (strcmp(buffer, "first") == 0) {
+        isFirstClient = 1;
+    }
+    printf("Buffer (first): %s\n", buffer);
 
     getNewSpreadsheet();
     receiveUpdates();
-    drawSpreadsheet();
+    // drawSpreadsheet();
 
     pthread_t sendThread;
     int sendVal = pthread_create(&sendThread, NULL, (void *) sendToServer, NULL);
@@ -113,55 +121,52 @@ void receiveFromServer() {
 
     //receive broadcasted cell details from server
     while(1) {
-            bytes_received=recv(sock_send, buffer, BUFFER_SIZE,0);
+        bytes_received=recv(sock_send, buffer, BUFFER_SIZE,0);
 
-            buffer[bytes_received]=0;
-            if(strcmp(buffer, "endsession") == 0) {
-                printf("\n\n[+] The session was ended\n");
-                strcpy(buffer, "shutdown");
-                int send_len = strlen("shutdown");
-                int bytes_sent = send(sock_send, buffer, send_len, 0);
-                endFlag = 1;
-                break;
-            } else if (strcmp(buffer, "first") == 0) {
-                isFirstClient = 1;
-                drawSpreadsheet();
-                printPrompt();
-                continue;
-            } else if (strcmp(buffer, "clear") == 0) {
-                getNewSpreadsheet();
-                drawSpreadsheet();
-                printPrompt();
-                continue;
-            }
-
-            addr = strtok(buffer, ":");
-            val = strtok(NULL, ":");
-
-            if(strcmp(addr, "update") == 0) {
-                drawSpreadsheet();
-                printf("\n%s\n", val);
-                printPrompt();
-                continue;
-            } else if(strcmp(addr, "count") == 0){
-                clientCount = atoi(val);
-                drawSpreadsheet();
-                printPrompt();
-                continue;
-            } else if(strcmp(addr, "undo") == 0){
-                int xCoordinate = val[0] - '0';
-                int yCoordinate = val[1] - '0';
-                placeOnGrid(xCoordinate, yCoordinate, " ");
-                drawSpreadsheet();
-                printPrompt();
-                continue;
-            }
-
-            int x = addr[0] - '0';
-            int y = addr[1] - '0';
-            placeOnGrid(x, y, val);
+        buffer[bytes_received]=0;
+        if(strcmp(buffer, "endsession") == 0) {
+            printf("\n\n[+] The session was ended\n");
+            strcpy(buffer, "shutdown");
+            int send_len = strlen("shutdown");
+            int bytes_sent = send(sock_send, buffer, send_len, 0);
+            endFlag = 1;
+            break;
+        } else if (strcmp(buffer, "clear") == 0) {
+            getNewSpreadsheet();
             drawSpreadsheet();
             printPrompt();
+            continue;
+        }
+
+        addr = strtok(buffer, ":");
+        val = strtok(NULL, ":");
+
+        if(strcmp(addr, "update") == 0) {
+            drawSpreadsheet();
+            printf("\n%s\n", val);
+            printPrompt();
+            continue;
+        } else if(strcmp(addr, "count") == 0){
+            clientCount = atoi(val);
+            // drawSpreadsheet();
+            // printPrompt();
+            continue;
+        } else if(strcmp(addr, "undo") == 0){
+            int xCoordinate = val[0] - '0';
+            int yCoordinate = val[1] - '0';
+            placeOnGrid(xCoordinate, yCoordinate, " ");
+
+            sleep(0.5);
+            drawSpreadsheet();
+            printPrompt();
+            continue;
+        }
+
+        int x = addr[0] - '0';
+        int y = addr[1] - '0';
+        placeOnGrid(x, y, val);
+        drawSpreadsheet();
+        printPrompt();
 
         if(endFlag) {
             break;
@@ -173,6 +178,8 @@ void sendToServer() {
     int	send_len, bytes_sent;
     char buffer[BUFFER_SIZE], cellAddr[4], cellVal[80], details[90], menuResponse[2];
 
+    sleep(1); //wait for count to be updated
+    drawSpreadsheet();
     while(1) {
         if(endFlag) {
             break;
@@ -200,21 +207,18 @@ void sendToServer() {
                         printf("\n[-] ERROR: Invalid cell address \n");
 
                         atMenu = 1;
-                        sleep(0.5);
                         break;
                     } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
                         drawSpreadsheet();
                         printf("\n[-] ERROR: Invalid cell address \n");
 
                         atMenu = 1;
-                        sleep(0.5);
                         break;
                     } else if(!( (cellAddr[0] >= 65 && cellAddr[0] <= 73) || (cellAddr[0] >= 97 && cellAddr[0] <= 105) )) {
                         drawSpreadsheet();
                         printf("\n[-] ERROR: Invalid cell address \n");
 
                         atMenu = 1;
-                        sleep(0.5);
                         break;
                     }
                     promptNo = 1;
@@ -234,26 +238,23 @@ void sendToServer() {
                     promptInput[0] = '\0';
 
                     atMenu = 1;
-                    sleep(0.5);
                     break;
 
                 case '5':
                     strcpy(buffer, "undo");
                     send_len = strlen("undo");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
-                    sleep(0.5);
+                    drawSpreadsheet();
                     break;
                 case '6':
                     strcpy(buffer, "shutdown");
                     send_len = strlen("shutdown");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
                     endFlag = 1;
-                    sleep(0.5);
                     break;
                 default:
                     drawSpreadsheet();
                     printf("\n[-] Invalid response! Try again\n");
-                    sleep(0.5);
                     break;
             }
 
@@ -272,21 +273,18 @@ void sendToServer() {
                         printf("\n[-] ERROR: Invalid cell address \n");
 
                         atMenu = 1;
-                        sleep(0.5);
                         break;
                     } else if((isalpha(cellAddr[0]) == 0) || isdigit(cellAddr[1]) == 0) {
                         drawSpreadsheet();
                         printf("\n[-] ERROR: Invalid cell address \n");
 
                         atMenu = 1;
-                        sleep(0.5);
                         break;
                     } else if(!( (cellAddr[0] >= 65 && cellAddr[0] <= 73) || (cellAddr[0] >= 97 && cellAddr[0] <= 105) )) {
                         drawSpreadsheet();
                         printf("\n[-] ERROR: Invalid cell address \n");
 
                         atMenu = 1;
-                        sleep(0.5);
                         break;
                     }
                     promptNo = 1;
@@ -306,7 +304,6 @@ void sendToServer() {
                     promptInput[0] = '\0';
 
                     atMenu = 1;
-                    sleep(0.5);
                     break;
 
                 case '2':
@@ -314,18 +311,17 @@ void sendToServer() {
                     send_len = strlen("undo");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
                     sleep(0.5);
+                    drawSpreadsheet();
                     break;
                 case '3':
                     strcpy(buffer, "shutdown");
                     send_len = strlen("shutdown");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
                     endFlag = 1;
-                    sleep(0.5);
                     break;
                 default:
                     drawSpreadsheet();
                     printf("\n[-] Invalid response! Try again\n");
-                    sleep(0.5);
                     break;
             }
         }
@@ -441,7 +437,7 @@ void displayMenu() {
     printf("\n\n****************    Hi, %s!   ****************\n\n", name);
     printf("Please enter the number that corresponds with your choice:\n\n");
     printf("\t(1) Update the spreadsheet\n");
-    printf("\t(2) Undo last edit made\n");
+    printf("\t(2) Undo your last edit\n");
     printf("\t(3) Leave session\n\n");
     printf("Choice: ");
 }
@@ -453,7 +449,7 @@ void displayFirstClientMenu() {
     printf("\t(2) Clear current spreadsheet\n");
     printf("\t(3) Save current spreadsheet\n");
     printf("\t(4) Update current spreadsheet\n");
-    printf("\t(5) Undo last edit made to current spreadsheet\n");
+    printf("\t(5) Undo your last edit to current spreadsheet\n");
     printf("\t(6) End session\n\n");
     printf("Choice: ");
 }

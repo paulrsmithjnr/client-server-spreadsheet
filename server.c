@@ -49,6 +49,7 @@ void pushToClientEditStack(int uid, char *coordinates);
 char *popFromClientEditStack(int uid);
 void undo(int x, int y);
 void clearClientEditStack(int uid);
+void clearAllClientsEditStacks();
 
 //global declaration of the spreadsheet's grid structure
 char * grid[NUM_RANGE][NUM_RANGE];
@@ -158,21 +159,20 @@ void *handleClient(void *arg) {
     printf("\n[+] %s (client %d) connected successfully\n", client->name, client->uid);
     printf("[+] Total number of clients: %d\n", clientCount);
 
+    if(client->uid == 0) {
+        messageClient("first", client->uid);
+    } else {
+        messageClient("not_first", client->uid);
+    }
+    sleep(0.5);
+
     updateClientSpreadsheet(client->uid);
 
     sprintf(message, "count:%d", clientCount);
     broadcastMessage(message);
-
-    sleep(0.5);
-
+    sleep(1);
     sprintf(message, "update:[+] %s (client %d) joined the session", client->name, client->uid);
     broadcastMessageToAllExcept(message, client->uid);
-
-    if(client->uid == 0) {
-        char first[6];
-        strcpy(first, "first");
-        messageClient(first, client->uid);
-    }
     
     while (1) {
         x = 0;
@@ -197,13 +197,15 @@ void *handleClient(void *arg) {
                 strcpy(clearMessage, "clear");
                 broadcastMessage(clearMessage);
                 getNewSpreadsheet();
+                sleep(0.5);
+                sprintf(message, "update:[+] %s (client %d) cleared the spreadsheet", client->name, client->uid);
+                broadcastMessageToAllExcept(message, client->uid);
             }
             continue;
         } else if (strcmp(buffer, "undo") == 0){
             char *coordinates = popFromClientEditStack(client->uid);
             if(coordinates) {
-                
-                printf("\n[+] %s (client %d) undid the last edit they made\n", client->name, client->uid);
+            
                 char undoMessage[11];
                 // char *coordinates = popFromClientEditStack(client->uid);
                 int xCoordinate = coordinates[0] - '0', yCoordinate = coordinates[1] - '0';
@@ -213,6 +215,13 @@ void *handleClient(void *arg) {
                 strcpy(undoMessage, "undo:");
                 strcat(undoMessage, coordinates);
                 broadcastMessage(undoMessage);
+
+                printf("\n[+] %s (client %d) undid their most recent edit\n", client->name, client->uid);
+
+                sleep(0.5);
+                sprintf(message, "update:[+] %s (client %d) undid their most recent edit", client->name, client->uid);
+                broadcastMessageToAllExcept(message, client->uid);
+
             
             }
             continue; 
@@ -454,6 +463,14 @@ void clearClientEditStack(int uid) {
     }
 }
 
+void clearAllClientsEditStacks() {
+    for(int i = 0; i < MAX_CLIENTS; i++) {
+        if(clients[i]) {
+            clearClientEditStack(clients[i]->uid);
+        }
+    }
+}
+
 void pushToClientEditStack(int uid, char *coordinates) {
     int position =  getPosition(uid);
     char *string = malloc(sizeof(char *));
@@ -505,6 +522,8 @@ int getPosition(int uid) {
 }
 
 void getNewSpreadsheet() {
+    clearAllClientsEditStacks();
+
     for(int i = 0; i < NUM_RANGE; i++) {
         for(int j = 0; j < NUM_RANGE; j++) {
             grid[i][j] = malloc(sizeof(char *));
