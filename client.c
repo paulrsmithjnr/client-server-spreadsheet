@@ -215,11 +215,13 @@ void sendToServer() {
     drawSpreadsheet();
     
     char fistSave[50];
-    strcpy(fistSave, "saveSheet:");
-    strcat(fistSave, nameOfSpreadsheet);
-    strcpy(buffer,fistSave);
-    send_len = strlen(fistSave);
-    bytes_sent = send(sock_send, buffer, send_len, 0);
+    if(isFirstClient) {
+        strcpy(fistSave, "saveSheet:");
+        strcat(fistSave, nameOfSpreadsheet);
+        strcpy(buffer,fistSave);
+        send_len = strlen(fistSave);
+        bytes_sent = send(sock_send, buffer, send_len, 0);
+    }
 
     while(1) {
         if(endFlag) {
