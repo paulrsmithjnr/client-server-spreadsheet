@@ -18,7 +18,7 @@ Paul Smith          -   620118115
 #include <pthread.h>
 
 #define BUFFER_SIZE	1024
-#define LISTEN_PORT	2124
+#define LISTEN_PORT	2121
 #define NUM_RANGE   9
 #define MAX_CLIENTS 100
 #define EDIT_STACK_SIZE 20
@@ -123,6 +123,14 @@ int main() {
     }
     
     printf("[+] Server started successfully\n");
+    printf("\n\n ** BONUS FEATURES **\n\n");
+    printf("    -- The first client can open previously saved spreadsheets or create a new one.\n");
+    printf("    -- A menu is displayed to each client.\n");
+    printf("    -- The first client sees a different menu from the rest of the clients.\n");
+    printf("    -- Functions accept cell ranges that span across multiple rows and columns.\n");
+    printf("    -- The first client can clear the contents of the current spreadsheet.\n");
+    printf("    -- Clients can undo their most recent additions.\n");
+    printf("    -- Each client can clear the contents of a particular cell.\n\n");
     printf("[+] Listening for clients...\n");
     getNewSpreadsheet();
     while(1) {
@@ -324,9 +332,12 @@ void *handleClient(void *arg) {
             }
         }
 
-        double value = atof(cellVal);
-        sprintf(cellVal, "%.2lf", value);
-
+        
+        if(isNumber(cellVal)) {
+            double value = atof(cellVal);
+            sprintf(cellVal, "%.2lf", value);
+        }
+        
         if (strlen(cellAddr) == 2) {
             y = colLetterToNum(cellAddr[0]);
             x = cellAddr[1] - '0';

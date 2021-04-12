@@ -20,7 +20,7 @@ Paul Smith          -   620118115
 
 #define BUFFER_SIZE	1024
 #define	SERVER_IP	"127.0.0.1"
-#define SERVER_PORT	2124
+#define SERVER_PORT	2121
 #define NUM_RANGE 9
 
 //function declarations
@@ -213,6 +213,14 @@ void sendToServer() {
     printf("[+] Loading spreadsheet...\n");
     sleep(1); //wait for count to be updated
     drawSpreadsheet();
+    
+    char fistSave[50];
+    strcpy(fistSave, "saveSheet:");
+    strcat(fistSave, nameOfSpreadsheet);
+    strcpy(buffer,fistSave);
+    send_len = strlen(fistSave);
+    bytes_sent = send(sock_send, buffer, send_len, 0);
+
     while(1) {
         if(endFlag) {
             break;
