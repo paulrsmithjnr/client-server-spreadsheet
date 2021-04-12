@@ -35,7 +35,7 @@ typedef struct client_t{
     char *editsStack[EDIT_STACK_SIZE]; //stores the cell addresses that the client edited in order to facilitate the undo feature
 } client_t;
 
-//function declarations
+//function declarations - explanations for each are above each function definition below
 void *handleClient(void *arg);
 void addToClientArray(client_t *client);
 void removeFromClientArray(int uid);
