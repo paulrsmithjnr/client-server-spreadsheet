@@ -1,4 +1,12 @@
-#include<stdio.h>
+/*
+COMP2130 Final Project
+
+GROUP MEMBER            ID Number
+Javon Ellis         -   620126389
+Monique Satchwell   -   620119851
+Paul Smith          -   620118115
+*/
+#include <stdio.h>
 #include <sys/types.h>	/* system type defintions */
 #include <sys/socket.h>	/* network system functions */
 #include <netinet/in.h>	/* protocol & struct definitions */
