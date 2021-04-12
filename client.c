@@ -12,7 +12,7 @@
 
 #define BUFFER_SIZE	1024
 #define	SERVER_IP	"127.0.0.1"
-#define SERVER_PORT	2123
+#define SERVER_PORT	2124
 #define NUM_RANGE 9
 
 //function declarations
@@ -26,6 +26,7 @@ int colLetterToNum(char letter);
 void placeOnGrid(int x, int y, char* c);
 void displayMenu();
 void displayFirstClientMenu();
+void receiveNewSheet();
 
 //global declaration structure grid
 char * grid[NUM_RANGE][NUM_RANGE];
@@ -81,8 +82,32 @@ int main() {
     char buffer[BUFFER_SIZE];
     int bytes_received = recv(sock_send, buffer, BUFFER_SIZE, 0);
     buffer[bytes_received] = 0;
+
     if (strcmp(buffer, "first") == 0) {
         isFirstClient = 1;
+
+        strcpy(buffer, "received");
+        send_len = strlen("received");
+        bytes_sent = send(sock_send, buffer, send_len, 0);
+
+        bytes_received = recv(sock_send, buffer, BUFFER_SIZE, 0);
+        buffer[bytes_received] = 0;
+
+        char fileName[50];
+        char *file = strtok(buffer, ":");
+
+        printf("\n\nAvailable files:\n\n");
+        while(file != NULL) {
+            printf("\t** %s\n", file);
+            file = strtok(NULL, ":");
+        }
+
+        printf("\nEnter the name of the file you would like to open\n(If you would like to create a new spreadsheet, enter the name to assign to it): ");
+        scanf("%s", fileName);
+        strcpy(buffer, fileName);
+        send_len = strlen(fileName);
+        bytes_sent = send(sock_send, buffer, send_len, 0);
+
     }
 
     getNewSpreadsheet();
@@ -121,8 +146,8 @@ void receiveFromServer() {
     //receive broadcasted cell details from server
     while(1) {
         bytes_received=recv(sock_send, buffer, BUFFER_SIZE,0);
-
         buffer[bytes_received]=0;
+        
         if(strcmp(buffer, "endsession") == 0) {
             printf("\n\n[+] The session was ended\n");
             strcpy(buffer, "shutdown");
@@ -159,7 +184,7 @@ void receiveFromServer() {
             drawSpreadsheet();
             printPrompt();
             continue;
-        }
+        } 
 
         int x = addr[0] - '0';
         int y = addr[1] - '0';
@@ -193,17 +218,17 @@ void sendToServer() {
             char info[30];
 
             switch(menuResponse[0]){
-                case '2':
+                case '1':
                     strcpy(buffer, "clearSheet");
                     send_len = strlen("clearSheet");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
                     break;
                 
-                case '3':
-                    printf("\nPlease enter the name you would like to save \nthe spreadsheet as (without file extension): ");
-                    scanf("%s", filename);
+                case '2':
+                    // printf("\nPlease enter the name you would like to save \nthe spreadsheet as (without file extension): ");
+                    // scanf("%s", filename);
                     strcpy(info, "saveSheet:");
-                    strcat(info, filename);
+                    strcat(info, nameOfSpreadsheet);
                     strcpy(buffer,info);
                     send_len = strlen(info);
                     bytes_sent = send(sock_send, buffer, send_len, 0);
@@ -211,7 +236,7 @@ void sendToServer() {
                     printf("\n[+] You have saved the spreadsheet\n");
                     break;
 
-                case '4': 
+                case '3': 
                     atMenu = 0;
 
                     printPrompt();
@@ -256,14 +281,14 @@ void sendToServer() {
                     atMenu = 1;
                     break;
 
-                case '5':
+                case '4':
                     strcpy(buffer, "undo");
                     send_len = strlen("undo");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
                     drawSpreadsheet();
                     break;
 
-                case '6':
+                case '5':
 
                     printf("\nPlease enter the cell address you want to clear: ");
                     scanf("%s",cellAddr);
@@ -298,7 +323,7 @@ void sendToServer() {
                     atMenu = 1;
                     break;
 
-                case '7':
+                case '6':
                     strcpy(buffer, "shutdown");
                     send_len = strlen("shutdown");
                     bytes_sent = send(sock_send, buffer, send_len, 0);
@@ -423,14 +448,18 @@ void receiveUpdates() {
     char buffer[BUFFER_SIZE], *addr, *val;
     int bytes_received;
 
-    strcpy(nameOfSpreadsheet, "sample_spreadsheet_name");
+    bytes_received=recv(sock_send, buffer, BUFFER_SIZE,0);
+    buffer[bytes_received]=0;
+    strcpy(nameOfSpreadsheet, buffer);
+
+    send(sock_send, "Received", strlen("Received"), 0);
 
     //receive broadcasted cell details from server
     while(1) {
         memset(&buffer, 0, sizeof(buffer));
         bytes_received=recv(sock_send, buffer, BUFFER_SIZE,0);
-
         buffer[bytes_received]=0;
+
         if(strcmp(buffer, "Done") == 0) {
             break;
         }
@@ -535,13 +564,11 @@ void displayMenu() {
 void displayFirstClientMenu() {
     printf("\n\n****************    Hi, %s!   ****************\n\n", name);
     printf("Please enter the number that corresponds with your choice:\n\n");
-    printf("\t(1) Open new spreadsheet\n");
-    printf("\t(2) Clear current spreadsheet\n");
-    printf("\t(3) Save current spreadsheet\n");
-    printf("\t(NA) Save current spreadsheet as...\n");
-    printf("\t(4) Update current spreadsheet\n");
-    printf("\t(5) Undo your most recent addition to current spreadsheet\n");
-     printf("\t(6) Clear cell content\n");
-    printf("\t(7) End session\n\n");
+    printf("\t(1) Clear spreadsheet\n");
+    printf("\t(2) Save spreadsheet\n");
+    printf("\t(3) Update spreadsheet\n");
+    printf("\t(4) Undo your most recent addition to spreadsheet\n");
+    printf("\t(5) Clear cell content\n");
+    printf("\t(6) End session\n\n");
     printf("Choice: ");
 }

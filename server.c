@@ -10,7 +10,7 @@
 #include <pthread.h>
 
 #define BUFFER_SIZE	1024
-#define LISTEN_PORT	2123
+#define LISTEN_PORT	2124
 #define NUM_RANGE   9
 #define MAX_CLIENTS 100
 #define EDIT_STACK_SIZE 20
@@ -50,6 +50,9 @@ char *popFromClientEditStack(int uid);
 void undo(int x, int y);
 void clearClientEditStack(int uid);
 void clearAllClientsEditStacks();
+void getFileNames();
+void loadFileToSpreadsheet(char *file);
+void updateAllClientsSpreadsheet();
 
 //global declaration of the spreadsheet's grid structure
 char * grid[NUM_RANGE][NUM_RANGE];
@@ -71,6 +74,8 @@ pthread_mutex_t clients_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 //sockets
 int	sock_listen, sock_recv;
+
+char nameOfSpreadsheet[50];
 
 int main() {
     struct sockaddr_in	my_addr,recv_addr;
@@ -161,6 +166,20 @@ void *handleClient(void *arg) {
 
     if(client->uid == 0) {
         messageClient("first", client->uid);
+
+        bytes_received=recv(client->sockfd, buffer, BUFFER_SIZE,0);//delay
+
+        getFileNames();
+
+        bytes_received=recv(client->sockfd, buffer, BUFFER_SIZE,0);
+        buffer[bytes_received] = 0;
+
+        char file[30];
+        strcpy(file, buffer);
+        loadFileToSpreadsheet(file);
+
+        strcpy(nameOfSpreadsheet, file);
+        printf("\n[+] %s (client %d) opened the %s spreadsheet\n", client->name, client->uid, nameOfSpreadsheet);
     } else {
         messageClient("not_first", client->uid);
     }
@@ -190,7 +209,7 @@ void *handleClient(void *arg) {
                 endFlag = 1;
             }
             break;
-        }else if (strcmp(buffer, "clearSheet") == 0){
+        } else if (strcmp(buffer, "clearSheet") == 0){
             if(client->uid == 0) {
                 printf("\n[+] %s (client %d) cleared the spreadsheet\n", client->name, client->uid);
                 char clearMessage[11];
@@ -206,9 +225,7 @@ void *handleClient(void *arg) {
             char *coordinates = popFromClientEditStack(client->uid);
             if(coordinates) {
 
-
                 char undoMessage[11];
-                // char *coordinates = popFromClientEditStack(client->uid);
                 int xCoordinate = coordinates[0] - '0', yCoordinate = coordinates[1] - '0';
 
                 undo(xCoordinate, yCoordinate);
@@ -447,6 +464,10 @@ void updateClientSpreadsheet(int uid) {
     char coordinates[3], details[90], buffer[BUFFER_SIZE];
     int bytes_received, position = getPosition(uid);
     
+    messageClient(nameOfSpreadsheet, uid);
+    bytes_received=recv(clients[position]->sockfd, buffer, BUFFER_SIZE, 0);
+    buffer[bytes_received]=0;
+
     // broadcastMessage(details);
     for(int x = 0; x < NUM_RANGE; x++) {
         for(int y = 0; y < NUM_RANGE; y ++) {
@@ -467,6 +488,7 @@ void updateClientSpreadsheet(int uid) {
     }
     messageClient("Done", uid);
 }
+
 
 void clearClientEditStack(int uid) {
     int position = getPosition(uid);
@@ -773,8 +795,8 @@ double range(char *start, char *end) {
 
 //write the contents of the grid to a file
 void saveWorksheet(char *filename){
-    char file[50];
-    FILE *fptr, *fptr2;// file pointers
+    char file[30], fileName[30];
+    FILE *fptr, *fptr2, *fptr3;// file pointers
 
     strcpy(file, filename);
     strcat(file, ".txt");
@@ -790,16 +812,38 @@ void saveWorksheet(char *filename){
                 fprintf(fptr,"%d%d:%s\n", i, j, grid[i][j]);
             }
         }
-     }
-     fclose(fptr);
+    }
+    fclose(fptr);
 
-     fptr2 = fopen("savedSpreadsheets.txt", "a");
-     if (fptr2 == NULL) {
+
+    fptr2 = fopen("savedSpreadsheets.txt", "r");
+
+    if (fptr2 == NULL) {
         printf("\n[-] 'savedSpreadsheets.txt' file not found\n");
     } else {
-        fprintf(fptr,"%s\n", filename);
+        fscanf(fptr2, "%s\n", fileName);
+        while(!feof(fptr2)) {
+            if(strcmp(filename, fileName) == 0) {
+                fclose(fptr2);
+                return;
+            }
+            fscanf(fptr2, "%s\n", fileName);
+        }
+        if(strcmp(filename, fileName) == 0) {
+            fclose(fptr2);
+            return;
+        }
     }
     fclose(fptr2);
+
+
+    fptr3 = fopen("savedSpreadsheets.txt", "a");
+    if (fptr3 == NULL) {
+        printf("\n[-] 'savedSpreadsheets.txt' file not found\n");
+    } else {
+        fprintf(fptr3,"%s\n", filename);
+    }
+    fclose(fptr3);
 }
 
 void getFileNames() {
@@ -813,7 +857,8 @@ void getFileNames() {
     if (fptr == NULL) {
         printf("\n[-] 'savedSpreadsheets.txt' file not found\n");
     } else {
-        strcpy(message, "files:");
+        // strcpy(message, "files:");
+        message[0] = '\0';
 
         fscanf(fptr, "%s\n", fileName);
         strcat(message, fileName);
@@ -821,9 +866,51 @@ void getFileNames() {
             
             fscanf(fptr, "%s\n", fileName);
             strcat(message, ":");
-            strcat(message, fileName);            
+            strcat(message, fileName);
+
         }
         messageClient(message, 0);
+    }
+    fclose(fptr);
+}
+
+void loadFileToSpreadsheet(char *file) {
+    char filename[30], line[100], *content, *coords;
+    FILE *fptr;// file pointers
+    int x, y;
+
+    strcpy(filename, file);
+    strcat(filename, ".txt");
+
+    getNewSpreadsheet();
+
+    fptr=fopen(filename,"r");
+    if(fptr==NULL){
+        printf("\n[+]Creating %s file\n", filename);
+        fptr=fopen(filename,"w");
+        fclose(fptr);
+        return;
+    }
+
+    fscanf(fptr, "%s\n", line);
+
+    coords = strtok(line, ":");
+    content = strtok(NULL, ":");
+    x = (coords[0] - '0') + 1;
+    y = (coords[1] - '0') + 1;
+
+    placeOnGrid(x, y, content);
+    while(!feof(fptr)) {       
+
+        fscanf(fptr, "%s\n", line);
+    
+        coords = strtok(line, ":");
+        content = strtok(NULL, ":");
+        x = (coords[0] - '0') + 1;
+        y = (coords[1] - '0') + 1;
+
+        placeOnGrid(x, y, content);
+
     }
     fclose(fptr);
 }
