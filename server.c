@@ -2,9 +2,20 @@
 COMP2130 Final Project
 
 GROUP MEMBER            ID Number
+---------------------------------
 Javon Ellis         -   620126389
 Monique Satchwell   -   620119851
 Paul Smith          -   620118115
+
+** BONUS FEATURES **
+
+    -- The first client can open previously saved spreadsheets or create a new one.
+    -- A menu is displayed to each client.
+    -- The first client sees a different menu from the rest of the clients.
+    -- Functions accept cell ranges that span across multiple rows and columns.
+    -- The first client can clear the contents of the current spreadsheet.
+    -- Clients can undo their most recent additions.
+    -- Each client can clear the contents of a particular cell.
 
 Command to run program: gcc -o server server.c -lpthread
 */
