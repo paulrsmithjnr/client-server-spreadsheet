@@ -5,6 +5,8 @@ GROUP MEMBER            ID Number
 Javon Ellis         -   620126389
 Monique Satchwell   -   620119851
 Paul Smith          -   620118115
+
+Command to run program: gcc -o client client.c -lpthread
 */
 #include<stdio.h>
 #include <sys/types.h>
@@ -17,7 +19,7 @@ Paul Smith          -   620118115
 #include <ctype.h>
 #include <pthread.h>
 
-
+//Defintion of constants
 #define BUFFER_SIZE	1024
 #define	SERVER_IP	"127.0.0.1"
 #define SERVER_PORT	2121
