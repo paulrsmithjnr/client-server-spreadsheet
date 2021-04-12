@@ -316,6 +316,9 @@ void *handleClient(void *arg) {
             }
         }
 
+        double value = atof(cellVal);
+        sprintf(cellVal, "%.2lf", value);
+
         if (strlen(cellAddr) == 2) {
             y = colLetterToNum(cellAddr[0]);
             x = cellAddr[1] - '0';
